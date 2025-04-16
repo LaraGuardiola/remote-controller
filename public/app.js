@@ -5,13 +5,14 @@ const trackpad = document.querySelector(".trackpad");
 
 let startX = 0;
 let startY = 0;
+let moved = false;
+const moveThreshold = 5;
 
 const sendDimensions = () => {
     socket.emit("dimensions", {
         width: trackpad.clientWidth,
         height: trackpad.clientHeight
     });
-    // console.log("Dimensiones enviadas:", trackpad.clientWidth, trackpad.clientHeight);
 }
 
 socket.on("connect", () => {
@@ -27,10 +28,18 @@ const handleTouchMove = (e) => {
     const deltaX = currentX - startX;
     const deltaY = currentY - startY;
 
-    socket.emit("movement", { deltaX, deltaY });
+    if (deltaX > moveThreshold || deltaY > moveThreshold) {
+        moved = true;
+    }
 
+    socket.emit("movement", deltaX, deltaY);
+    
     startX = currentX;
     startY = currentY;
+}
+
+const handleTouchClick = (e) => {
+    socket.emit("click")
 }
 
 const throttle = (callback, delay) => {
@@ -56,6 +65,14 @@ trackpad.addEventListener("touchstart", (e) => {
     const touch = e.touches[0];
     startX = touch.clientX - trackpad.offsetLeft;
     startY = touch.clientY - trackpad.offsetTop;
+    moved = false;
+});
+
+trackpad.addEventListener("touchend", (e) => {
+    e.preventDefault();
+    if (!moved) {
+        handleTouchClick(e);
+    }
 });
 
 // window.addEventListener("resize", sendDimensions);

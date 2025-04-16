@@ -8,11 +8,45 @@ const port = 3000;
 
 const httpServer = createServer(app);
 
-const io = new Server(httpServer);
+const io = new Server(httpServer, {
+  // transports: ['websocket'],
+  maxHttpBufferSize: 1e3,
+  pingTimeout: 60000,
+  pingInterval: 25000,
+});
 const deviceDimensions = new Map();
 
 app.use(express.json());
 app.use(express.static('public'))
+
+let pendingDeltaX = 0;
+let pendingDeltaY = 0;
+let processingQueue = false;
+
+
+const processMouseQueue = () => {
+  if (pendingDeltaX === 0 && pendingDeltaY === 0) {
+    processingQueue = false;
+    return;
+  }
+
+  const currentPos = robot.getMousePos();
+  const sensitivity = 5;
+
+  let newX = currentPos.x + (pendingDeltaX * sensitivity);
+  let newY = currentPos.y + (pendingDeltaY * sensitivity);
+
+  const screenSize = robot.getScreenSize();
+  newX = Math.max(0, Math.min(newX, screenSize.width - 1));
+  newY = Math.max(0, Math.min(newY, screenSize.height - 1));
+
+  robot.moveMouse(Math.round(newX), Math.round(newY));
+
+  pendingDeltaX = 0;
+  pendingDeltaY = 0;
+
+  setTimeout(processMouseQueue, 8);
+}
 
 io.on('connection', (socket) => {
   console.log('Un cliente se ha conectado');
@@ -22,28 +56,20 @@ io.on('connection', (socket) => {
     deviceDimensions.set(socket.id, data);
   });
 
-  socket.on('movement', (data) => {
-    const { deltaX, deltaY } = data;
-    const dimensions = deviceDimensions.get(socket.id);
+  socket.on('movement', (deltaX, deltaY) => {
+    console.log("Movement received:", deltaX, deltaY);
 
-    if (!dimensions) {
-      console.log('No se han recibido dimensiones para este cliente');
-      return;
+    pendingDeltaX += deltaX;
+    pendingDeltaY += deltaY;
+
+    if (!processingQueue) {
+      processingQueue = true;
+      processMouseQueue();
     }
+  });
 
-    const currentPos = robot.getMousePos();
-
-    const sensitivity = 5;
-
-    let newX = currentPos.x + (deltaX * sensitivity);
-    let newY = currentPos.y + (deltaY * sensitivity);
-
-    const screenSize = robot.getScreenSize();
-    newX = Math.max(0, Math.min(newX, screenSize.width - 1));
-    newY = Math.max(0, Math.min(newY, screenSize.height - 1));
-
-    robot.moveMouse(Math.round(newX), Math.round(newY));
-    // console.log(`Mouse moved to: ${mouseX}, ${mouseY}`);
+  socket.on('click', () => {
+    robot.mouseClick('left');
   });
 
   socket.on('disconnect', () => {
@@ -52,5 +78,5 @@ io.on('connection', (socket) => {
 });
 
 httpServer.listen(port, () => {
-  console.log(`Server listenting on http://localhost:${port}`);
+  console.log(`Server listening on http://localhost:${port}`);
 });
