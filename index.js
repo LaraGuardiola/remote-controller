@@ -9,7 +9,6 @@ const port = 3000;
 const httpServer = createServer(app);
 
 const io = new Server(httpServer, {
-  // transports: ['websocket'],
   maxHttpBufferSize: 1e3,
   pingTimeout: 60000,
   pingInterval: 25000,
@@ -22,7 +21,6 @@ app.use(express.static('public'))
 let pendingDeltaX = 0;
 let pendingDeltaY = 0;
 let processingQueue = false;
-
 
 const processMouseQueue = () => {
   if (pendingDeltaX === 0 && pendingDeltaY === 0) {
@@ -49,10 +47,10 @@ const processMouseQueue = () => {
 }
 
 io.on('connection', (socket) => {
-  console.log('Un cliente se ha conectado');
+  console.log('Client connected:', socket.id);
 
   socket.on('dimensions', (data) => {
-    console.log('Dimensiones recibidas:', data);
+    console.log('Device dimensions:', data);
     deviceDimensions.set(socket.id, data);
   });
 
@@ -68,12 +66,17 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('click', () => {
-    robot.mouseClick('left');
+  socket.on('click', (button) => {
+    console.log(`Click ${button} received`);
+    if(button === 'right') {
+      robot.mouseClick('right');
+    } else {
+      robot.mouseClick('left');
+    }
   });
 
   socket.on('disconnect', () => {
-    console.log('Un cliente se ha desconectado');
+    console.log('Client disconnected:', socket.id);
   });
 });
 

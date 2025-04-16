@@ -6,7 +6,9 @@ const trackpad = document.querySelector(".trackpad");
 let startX = 0;
 let startY = 0;
 let moved = false;
-const moveThreshold = 5;
+const moveThreshold = 0.1;
+let clickPossible = false; 
+const clickDelay = 50; 
 
 const sendDimensions = () => {
     socket.emit("dimensions", {
@@ -30,6 +32,7 @@ const handleTouchMove = (e) => {
 
     if (deltaX > moveThreshold || deltaY > moveThreshold) {
         moved = true;
+        clickPossible = false;
     }
 
     socket.emit("movement", deltaX, deltaY);
@@ -39,7 +42,7 @@ const handleTouchMove = (e) => {
 }
 
 const handleTouchClick = (e) => {
-    socket.emit("click")
+    socket.emit("click", "left");
 }
 
 const throttle = (callback, delay) => {
@@ -66,11 +69,16 @@ trackpad.addEventListener("touchstart", (e) => {
     startX = touch.clientX - trackpad.offsetLeft;
     startY = touch.clientY - trackpad.offsetTop;
     moved = false;
+    clickPossible = false;
+
+    setTimeout(() => {
+        clickPossible = true; 
+    }, clickDelay);
 });
 
 trackpad.addEventListener("touchend", (e) => {
     e.preventDefault();
-    if (!moved) {
+    if (!moved && clickPossible) {
         handleTouchClick(e);
     }
 });
