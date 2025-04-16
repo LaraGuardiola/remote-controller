@@ -23,23 +23,26 @@ io.on('connection', (socket) => {
   });
 
   socket.on('movement', (data) => {
-    // console.log('Movimiento recibido:', data);
+    const { deltaX, deltaY } = data;
     const dimensions = deviceDimensions.get(socket.id);
+
     if (!dimensions) {
       console.log('No se han recibido dimensiones para este cliente');
       return;
     }
-    const { x, y } = data;
-    const { width, height } = dimensions;
-    const screenWidth = robot.getScreenSize().width;
-    const screenHeight = robot.getScreenSize().height;
-    const trackpadWidth = width; 
-    const trackpadHeight = height; 
 
-    const mouseX = Math.round((x / trackpadWidth) * screenWidth);
-    const mouseY = Math.round((y / trackpadHeight) * screenHeight);
+    const currentPos = robot.getMousePos();
 
-    robot.moveMouse(mouseX, mouseY);
+    const sensitivity = 5;
+
+    let newX = currentPos.x + (deltaX * sensitivity);
+    let newY = currentPos.y + (deltaY * sensitivity);
+
+    const screenSize = robot.getScreenSize();
+    newX = Math.max(0, Math.min(newX, screenSize.width - 1));
+    newY = Math.max(0, Math.min(newY, screenSize.height - 1));
+
+    robot.moveMouse(Math.round(newX), Math.round(newY));
     // console.log(`Mouse moved to: ${mouseX}, ${mouseY}`);
   });
 
@@ -48,7 +51,6 @@ io.on('connection', (socket) => {
   });
 });
 
-// Iniciar el servidor
 httpServer.listen(port, () => {
-  console.log(`Servidor escuchando en http://localhost:${port}`);
+  console.log(`Server listenting on http://localhost:${port}`);
 });

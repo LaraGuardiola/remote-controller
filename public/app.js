@@ -3,6 +3,8 @@ import { io } from "https://cdn.socket.io/4.8.1/socket.io.esm.min.js";
 const socket = io();
 const trackpad = document.querySelector(".trackpad");
 
+let startX = 0;
+let startY = 0;
 
 const sendDimensions = () => {
     socket.emit("dimensions", {
@@ -19,12 +21,16 @@ socket.on("connect", () => {
 
 const handleTouchMove = (e) => {
     const touch = e.touches[0];
-    const x = touch.clientX - trackpad.offsetLeft;
-    const y = touch.clientY - trackpad.offsetTop;
-    socket.emit("movement", {
-        x,
-        y
-    });
+    const currentX = touch.clientX - trackpad.offsetLeft;
+    const currentY = touch.clientY - trackpad.offsetTop;
+
+    const deltaX = currentX - startX;
+    const deltaY = currentY - startY;
+
+    socket.emit("movement", { deltaX, deltaY });
+
+    startX = currentX;
+    startY = currentY;
 }
 
 const throttle = (callback, delay) => {
@@ -38,7 +44,7 @@ const throttle = (callback, delay) => {
     };
 }
 
-const throttledMove = throttle(handleTouchMove, 24);
+const throttledMove = throttle(handleTouchMove, 16);
 
 trackpad.addEventListener("touchmove", (e) => {
     e.preventDefault();
@@ -47,6 +53,9 @@ trackpad.addEventListener("touchmove", (e) => {
 
 trackpad.addEventListener("touchstart", (e) => {
     e.preventDefault();
+    const touch = e.touches[0];
+    startX = touch.clientX - trackpad.offsetLeft;
+    startY = touch.clientY - trackpad.offsetTop;
 });
 
 // window.addEventListener("resize", sendDimensions);
