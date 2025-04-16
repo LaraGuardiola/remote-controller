@@ -21,6 +21,7 @@ app.use(express.static('public'))
 let pendingDeltaX = 0;
 let pendingDeltaY = 0;
 let processingQueue = false;
+let isDragging = false;
 
 const processMouseQueue = () => {
   if (pendingDeltaX === 0 && pendingDeltaY === 0) {
@@ -29,7 +30,7 @@ const processMouseQueue = () => {
   }
 
   const currentPos = robot.getMousePos();
-  const sensitivity = 5;
+  const sensitivity = isDragging ? 3 : 5;
 
   let newX = currentPos.x + (pendingDeltaX * sensitivity);
   let newY = currentPos.y + (pendingDeltaY * sensitivity);
@@ -68,15 +69,42 @@ io.on('connection', (socket) => {
 
   socket.on('click', (button) => {
     console.log(`Click ${button} received`);
-    if(button === 'right') {
+    if (button === 'right') {
       robot.mouseClick('right');
     } else {
       robot.mouseClick('left');
     }
   });
 
+  socket.on("dragStart", () => {
+    console.log("Dragging received");
+    isDragging = true;
+    robot.mouseToggle("down", "left");
+  });
+
+  socket.on("drag", (deltaX, deltaY) => {
+    console.log("Dragging:", deltaX, deltaY);
+    pendingDeltaX += deltaX;
+    pendingDeltaY += deltaY;
+
+    if (!processingQueue) {
+      processingQueue = true;
+      processMouseQueue();
+    }
+  });
+
+  socket.on("dragEnd", () => {
+    console.log("End dragging");
+    isDragging = false;
+    robot.mouseToggle("up", "left");
+  });
+
   socket.on('disconnect', () => {
     console.log('Client disconnected:', socket.id);
+    if (isDragging) {
+      isDragging = false;
+      robot.mouseToggle("up", "left");
+    }
   });
 });
 

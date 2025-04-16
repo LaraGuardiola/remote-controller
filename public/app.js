@@ -11,6 +11,10 @@ let clickPossible = false;
 const clickDelay = 50;
 let twoFingerTouchStart = false;
 const twoFingerMoveThreshold = 5;
+let longPressTimer = null;
+const longPressDuration = 500;
+let isDragging = false;
+let isTwoFingerGesture = false;
 
 const sendDimensions = () => {
     socket.emit("dimensions", {
@@ -26,16 +30,32 @@ socket.on("connect", () => {
 
 const handleTouchMove = (e) => {
     if (e.touches.length > 1) {
+        isTwoFingerGesture = true;
+        
+        if (longPressTimer) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+        }
+
         if (twoFingerTouchStart && e.touches.length === 2) {
             const deltaX1 = Math.abs(e.touches[0].clientX - trackpad.offsetLeft - startX[0]);
             const deltaY1 = Math.abs(e.touches[0].clientY - trackpad.offsetTop - startY[0]);
             const deltaX2 = Math.abs(e.touches[1].clientX - trackpad.offsetLeft - startX[1]);
             const deltaY2 = Math.abs(e.touches[1].clientY - trackpad.offsetTop - startY[1]);
 
-            if (deltaX1 > twoFingerMoveThreshold || deltaY1 > twoFingerMoveThreshold || deltaX2 > twoFingerMoveThreshold || deltaY2 > twoFingerMoveThreshold) {
-                twoFingerTouchStart = false;
+            if (deltaX1 > twoFingerMoveThreshold || deltaY1 > twoFingerMoveThreshold || 
+                deltaX2 > twoFingerMoveThreshold || deltaY2 > twoFingerMoveThreshold) {
+                moved = true;
             }
         }
+        
+        return;
+    }
+
+    if (isTwoFingerGesture && e.touches.length === 1) {
+        isTwoFingerGesture = false;
+        startX[0] = e.touches[0].clientX - trackpad.offsetLeft;
+        startY[0] = e.touches[0].clientY - trackpad.offsetTop;
         return;
     }
 
@@ -46,12 +66,23 @@ const handleTouchMove = (e) => {
     const deltaX = currentX - startX[0];
     const deltaY = currentY - startY[0];
 
-    if (deltaX > moveThreshold || deltaY > moveThreshold) {
+    if (Math.abs(deltaX) > moveThreshold || Math.abs(deltaY) > moveThreshold) {
         moved = true;
+        
+        if (!isDragging && longPressTimer) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+        }
+        
         clickPossible = false;
     }
 
-    socket.emit("movement", deltaX, deltaY);
+    // Enviar evento apropiado según el estado actual
+    if (isDragging) {
+        socket.emit("drag", deltaX, deltaY);
+    } else {
+        socket.emit("movement", deltaX, deltaY);
+    }
 
     startX[0] = currentX;
     startY[0] = currentY;
@@ -62,11 +93,24 @@ const handleTouchClick = (e) => {
 }
 
 const handleTwoFingerTouchEnd = (e) => {
-    if (twoFingerTouchStart && e.touches.length === 0) {
+    if (twoFingerTouchStart && e.touches.length === 0 && !moved) {
         socket.emit("click", "right");
-        twoFingerTouchStart = false;
     }
+    twoFingerTouchStart = false;
+    isTwoFingerGesture = false;
 };
+
+const startDragMode = () => {
+    isDragging = true;
+    socket.emit("dragStart");
+}
+
+const endDragMode = () => {
+    if (isDragging) {
+        socket.emit("dragEnd");
+        isDragging = false;
+    }
+}
 
 const throttle = (callback, delay) => {
     let lastCall = 0;
@@ -92,7 +136,6 @@ trackpad.addEventListener("touchstart", (e) => {
     startY = [];
     moved = false;
     clickPossible = false;
-    twoFingerTouchStart = false;
 
     for (let i = 0; i < e.touches.length; i++) {
         startX.push(e.touches[i].clientX - trackpad.offsetLeft);
@@ -101,21 +144,49 @@ trackpad.addEventListener("touchstart", (e) => {
 
     if (e.touches.length === 2) {
         twoFingerTouchStart = true;
+        isTwoFingerGesture = true;
+        
+        if (longPressTimer) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+        }
     } else if (e.touches.length === 1) {
         setTimeout(() => {
             clickPossible = true;
         }, clickDelay);
+        
+        if (!isTwoFingerGesture) {
+            longPressTimer = setTimeout(() => {
+                if (!moved) {
+                    startDragMode();
+                }
+                longPressTimer = null;
+            }, longPressDuration);
+        }
     }
 });
 
 trackpad.addEventListener("touchend", (e) => {
     e.preventDefault();
-    if (!moved && clickPossible && e.touches.length === 0 && !twoFingerTouchStart) {
+    
+    if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+    }
+    
+    if (!moved && clickPossible && e.touches.length === 0 && !isTwoFingerGesture) {
         handleTouchClick(e);
     }
+    
     if (twoFingerTouchStart && e.touches.length === 0) {
         handleTwoFingerTouchEnd(e);
     }
+    
+    if (e.touches.length === 0) {
+        endDragMode();
+        isTwoFingerGesture = false;
+    }
+    
     moved = false;
 });
 
