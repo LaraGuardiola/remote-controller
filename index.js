@@ -199,6 +199,46 @@ io.on('connection', (socket) => {
             console.log(`Not supported on ${platform}`);
           }
           break;
+        case 'task-manager':
+          if (systemCommands.taskManager[platform]) {
+            robot.keyTap('escape', ['control', 'shift']);
+            console.log('Opening task manager...')
+          } else {
+            console.log(`Not supported on ${platform}`);
+          }
+          break;
+        case 'copy':
+          if (systemCommands.copy[platform]) {
+            robot.keyTap('c', 'control')
+            console.log('Copying...')
+          } else {
+            console.log(`Not supported on ${platform}`);
+          }
+          break;
+        case 'paste':
+          if (systemCommands.paste[platform]) {
+            robot.keyTap('v', 'control')
+            console.log('Paste...')
+          } else {
+            console.log(`Not supported on ${platform}`);
+          }
+          break;
+        case 'undo':
+          if (systemCommands.undo[platform]) {
+            robot.keyTap('z', 'control')
+            console.log('Undo...')
+          } else {
+            console.log(`Not supported on ${platform}`);
+          }
+          break;
+        case 'redo':
+          if (systemCommands.redo[platform]) {
+            robot.keyTap('y', 'control')
+            console.log('Redo...')
+          } else {
+            console.log(`Not supported on ${platform}`);
+          }
+          break;
       }
     } catch (error) {
       console.error('Error executing command:', error);
@@ -209,3 +249,4 @@ io.on('connection', (socket) => {
 httpServer.listen(port, () => {
   console.log(`Server listening on http://localhost:${port}`);
 });
+console.log(`Not supported on ${platform}`);
