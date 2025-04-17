@@ -9,8 +9,44 @@
     <script type="module" src="app.js"></script>
 </head>
 <body>
+    <div class="media-controls-container">
+        <h3>Media</h3>
+        <div class="media-controls">
+          <button class="media-btn" data-action="volume-up">
+            <span>Volume +</span>
+          </button>
+          <button class="media-btn" data-action="volume-down">
+            <span>Volume -</span>
+          </button>
+          <button class="media-btn" data-action="mute">
+            <span>Mute</span>
+          </button>
+          <button class="media-btn" data-action="play-pause">
+            <span>Play/Pause</span>
+          </button>
+          <button class="media-btn" data-action="next-track">
+            <span>Next</span>
+          </button>
+          <button class="media-btn" data-action="prev-track">
+            <span>Previous</span>
+          </button>
+        </div>
+        
+        <h3>System</h3>
+        <div class="system-controls">
+          <button class="system-btn" data-action="lock">
+            <span>Lock</span>
+          </button>
+          <button class="system-btn warning" data-action="sleep">
+            <span>Sleep</span>
+          </button>
+          <button class="system-btn warning" data-action="shutdown">
+            <span>Shutdown</span>
+          </button>
+        </div>
+      </div>
     <div class="trackpad">
-        <p>hola!</p>
+        <p>Slide in here!</p>
     </div>
 </body>
 </html>

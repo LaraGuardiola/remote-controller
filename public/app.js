@@ -31,7 +31,7 @@ socket.on("connect", () => {
 const handleTouchMove = (e) => {
     if (e.touches.length > 1) {
         isTwoFingerGesture = true;
-        
+
         if (longPressTimer) {
             clearTimeout(longPressTimer);
             longPressTimer = null;
@@ -43,12 +43,12 @@ const handleTouchMove = (e) => {
             const deltaX2 = Math.abs(e.touches[1].clientX - trackpad.offsetLeft - startX[1]);
             const deltaY2 = Math.abs(e.touches[1].clientY - trackpad.offsetTop - startY[1]);
 
-            if (deltaX1 > twoFingerMoveThreshold || deltaY1 > twoFingerMoveThreshold || 
+            if (deltaX1 > twoFingerMoveThreshold || deltaY1 > twoFingerMoveThreshold ||
                 deltaX2 > twoFingerMoveThreshold || deltaY2 > twoFingerMoveThreshold) {
                 moved = true;
             }
         }
-        
+
         return;
     }
 
@@ -68,16 +68,15 @@ const handleTouchMove = (e) => {
 
     if (Math.abs(deltaX) > moveThreshold || Math.abs(deltaY) > moveThreshold) {
         moved = true;
-        
+
         if (!isDragging && longPressTimer) {
             clearTimeout(longPressTimer);
             longPressTimer = null;
         }
-        
+
         clickPossible = false;
     }
 
-    // Enviar evento apropiado según el estado actual
     if (isDragging) {
         socket.emit("drag", deltaX, deltaY);
     } else {
@@ -125,6 +124,29 @@ const throttle = (callback, delay) => {
 
 const throttledMove = throttle(handleTouchMove, 16);
 
+// Configuración de los controles multimedia
+document.querySelectorAll('.media-btn, .system-btn').forEach(button => {
+    button.addEventListener('click', function () {
+        const action = this.getAttribute('data-action');
+
+        // Para acciones críticas como apagar o suspender, pedimos confirmación
+        if (action === 'shutdown' || action === 'sleep') {
+            if (!confirm(`¿Estás seguro que deseas ${action === 'shutdown' ? 'apagar' : 'suspender'} el PC?`)) {
+                return;
+            }
+        }
+
+        // Enviamos la acción al servidor
+        socket.emit('media', action);
+
+        // Feedback visual al usuario
+        this.classList.add('active');
+        setTimeout(() => {
+            this.classList.remove('active');
+        }, 200);
+    });
+});
+
 trackpad.addEventListener("touchmove", (e) => {
     e.preventDefault();
     throttledMove(e);
@@ -145,7 +167,7 @@ trackpad.addEventListener("touchstart", (e) => {
     if (e.touches.length === 2) {
         twoFingerTouchStart = true;
         isTwoFingerGesture = true;
-        
+
         if (longPressTimer) {
             clearTimeout(longPressTimer);
             longPressTimer = null;
@@ -154,7 +176,7 @@ trackpad.addEventListener("touchstart", (e) => {
         setTimeout(() => {
             clickPossible = true;
         }, clickDelay);
-        
+
         if (!isTwoFingerGesture) {
             longPressTimer = setTimeout(() => {
                 if (!moved) {
@@ -168,25 +190,25 @@ trackpad.addEventListener("touchstart", (e) => {
 
 trackpad.addEventListener("touchend", (e) => {
     e.preventDefault();
-    
+
     if (longPressTimer) {
         clearTimeout(longPressTimer);
         longPressTimer = null;
     }
-    
+
     if (!moved && clickPossible && e.touches.length === 0 && !isTwoFingerGesture) {
         handleTouchClick(e);
     }
-    
+
     if (twoFingerTouchStart && e.touches.length === 0) {
         handleTwoFingerTouchEnd(e);
     }
-    
+
     if (e.touches.length === 0) {
         endDragMode();
         isTwoFingerGesture = false;
     }
-    
+
     moved = false;
 });
 

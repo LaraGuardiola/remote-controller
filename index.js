@@ -2,6 +2,9 @@ const express = require('express');
 const robot = require('robotjs');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
+const os = require('os');
+const { executeSystemCommand } = require('./utils.js');
+const { systemCommands } = require('./commands.js');
 
 const app = express();
 const port = 3000;
@@ -22,6 +25,8 @@ let pendingDeltaX = 0;
 let pendingDeltaY = 0;
 let processingQueue = false;
 let isDragging = false;
+
+const platform = os.platform();
 
 const processMouseQueue = () => {
   if (pendingDeltaX === 0 && pendingDeltaY === 0) {
@@ -106,6 +111,96 @@ io.on('connection', (socket) => {
       robot.mouseToggle("up", "left");
     }
   });
+
+  socket.on('media', (command) => {
+    try {
+      switch (command) {
+        case 'shutdown':
+          if (systemCommands.shutdown[platform]) {
+            executeSystemCommand(systemCommands.shutdown[platform])
+              .then(() => console.log('PC shutting down...'))
+              .catch(err => console.error('Error shutting down PC:', err));
+          } else {
+            console.log(`Not supported on ${platform}`);
+          }
+          break;
+        case 'volume-up':
+          if (systemCommands.volumeUp[platform]) {
+            executeSystemCommand(systemCommands.volumeUp[platform])
+              .then(() => console.log('Raising volume...'))
+              .catch(err => console.error('Error raising volume:', err));
+          } else {
+            console.log(`Not supported on ${platform}`);
+          }
+          break;
+        case 'volume-down':
+          if (systemCommands.volumeDown[platform]) {
+            executeSystemCommand(systemCommands.volumeDown[platform])
+              .then(() => console.log('Lowering volume...'))
+              .catch(err => console.error('Error lowering volume:', err));
+          } else {
+            console.log(`Not supported on ${platform}`);
+          }
+          break;
+        case 'play-pause':
+          if (systemCommands.playPause[platform]) {
+            executeSystemCommand(systemCommands.playPause[platform])
+              .then(() => console.log('Play / stop ...'))
+              .catch(err => console.error('Error playing/stopping media:', err));
+          } else {
+            console.log(`Not supported on ${platform}`);
+          }
+          break;
+        case 'mute':
+          if (systemCommands.mute[platform]) {
+            executeSystemCommand(systemCommands.mute[platform])
+              .then(() => console.log('Muted / unmuted media...'))
+              .catch(err => console.error('Error muting media:', err));
+          } else {
+            console.log(`Not supported on ${platform}`);
+          }
+          break;
+        case 'prev-track':
+          if (systemCommands.prevTrack[platform]) {
+            executeSystemCommand(systemCommands.prevTrack[platform])
+              .then(() => console.log('Previous track...'))
+              .catch(err => console.error('Error playing previous track:', err));
+          } else {
+            console.log(`Not supported on ${platform}`);
+          }
+          break;
+        case 'next-track':
+          if (systemCommands.nextTrack[platform]) {
+            executeSystemCommand(systemCommands.nextTrack[platform])
+              .then(() => console.log('next track...'))
+              .catch(err => console.error('Error playing next track:', err));
+          } else {
+            console.log(`Not supported on ${platform}`);
+          }
+          break;
+        case 'lock':
+          if (systemCommands.lock[platform]) {
+            executeSystemCommand(systemCommands.lock[platform])
+              .then(() => console.log('Locking pc...'))
+              .catch(err => console.error('Error locking pc:', err));
+          } else {
+            console.log(`Not supported on ${platform}`);
+          }
+          break;
+        case 'sleep':
+          if (systemCommands.sleep[platform]) {
+            executeSystemCommand(systemCommands.sleep[platform])
+              .then(() => console.log('Going to sleep 😴...'))
+              .catch(err => console.error('Error before going to sleep:', err));
+          } else {
+            console.log(`Not supported on ${platform}`);
+          }
+          break;
+      }
+    } catch (error) {
+      console.error('Error executing command:', error);
+    }
+  })
 });
 
 httpServer.listen(port, () => {
