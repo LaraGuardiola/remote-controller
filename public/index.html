@@ -3,50 +3,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>remote-controller</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js" integrity="sha384-mkQ3/7FUtcGyoppY6bz/PORYoGqOl7/aSUMn2ymDOJcapfS6PHqxhRTMh1RR0Q6+" crossorigin="anonymous"></script>
-    <script type="module" src="app.js"></script>
+    <title>Document</title>
+    <script type ="module" src="app.js"></script>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4285f4">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-status-bar-style" content="black">
+    <meta name="mobile-web-app-title" content="Remote Control">
+    <link rel="touch-icon" href="icons/remote-control-icon.svg">
 </head>
 <body>
-    <div class="media-controls-container">
-        <h3>Media</h3>
-        <div class="media-controls">
-          <button class="media-btn" data-action="volume-up">
-            <span>Volume +</span>
-          </button>
-          <button class="media-btn" data-action="volume-down">
-            <span>Volume -</span>
-          </button>
-          <button class="media-btn" data-action="mute">
-            <span>Mute</span>
-          </button>
-          <button class="media-btn" data-action="play-pause">
-            <span>Play/Pause</span>
-          </button>
-          <button class="media-btn" data-action="next-track">
-            <span>Next</span>
-          </button>
-          <button class="media-btn" data-action="prev-track">
-            <span>Previous</span>
-          </button>
+    <div class="container">
+        <div class="header">
+            <h1>Remote Control</h1>
+            <button class="menu-toggle" id="menuToggle">Menu</button>
         </div>
         
-        <h3>System</h3>
-        <div class="system-controls">
-          <button class="system-btn" data-action="lock">
-            <span>Lock</span>
-          </button>
-          <button class="system-btn warning" data-action="sleep">
-            <span>Sleep</span>
-          </button>
-          <button class="system-btn warning" data-action="shutdown">
-            <span>Shutdown</span>
-          </button>
+        <div class="menu-panel" id="menuPanel">
+            <div class="section">
+                <div class="section-title">Media</div>
+                <div class="button-grid">                   
+                    <button class="action-button" data-action="next-track">Next</button>
+                    <button class="action-button" data-action="play-pause">Play/Pause</button>
+                    <button class="action-button" data-action="volume-up">Volume +</button>
+                    <button class="action-button" data-action="prev-track">Previous</button>
+                    <button class="action-button" data-action="mute">Mute</button>                   
+                    <button class="action-button" data-action="volume-down">Volume -</button>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">System</div>
+                <div class="button-grid">
+                    <button class="action-button" data-action="lock">Lock</button>
+                    <button class="action-button red" data-action="sleep">Sleep</button>
+                    <button class="action-button red" data-action="shutdown">Shutdown</button>
+                </div>
+            </div>
         </div>
-      </div>
-    <div class="trackpad">
-        <p>Slide in here!</p>
+        
+        <div class="trackpad" id="trackpad">
+            <div class="trackpad-label">TRACKPAD</div>
+        </div>
     </div>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then((registration) => {
+                        console.log('Service Worker registered successfully:', registration.scope);
+                    })
+                    .catch((error) => {
+                        console.log('Error registering Service Worker:', error);
+                    });
+            });
+        }
+    </script>
 </body>
 </html>

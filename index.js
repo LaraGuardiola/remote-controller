@@ -12,6 +12,9 @@ const port = 3000;
 const httpServer = createServer(app);
 
 const io = new Server(httpServer, {
+  cors: {
+    origin: '*', // for testing purposes
+  },
   maxHttpBufferSize: 1e3,
   pingTimeout: 60000,
   pingInterval: 25000,

@@ -124,22 +124,18 @@ const throttle = (callback, delay) => {
 
 const throttledMove = throttle(handleTouchMove, 16);
 
-// Configuración de los controles multimedia
-document.querySelectorAll('.media-btn, .system-btn').forEach(button => {
+document.querySelectorAll('.action-button').forEach(button => {
     button.addEventListener('click', function () {
         const action = this.getAttribute('data-action');
 
-        // Para acciones críticas como apagar o suspender, pedimos confirmación
         if (action === 'shutdown' || action === 'sleep') {
-            if (!confirm(`¿Estás seguro que deseas ${action === 'shutdown' ? 'apagar' : 'suspender'} el PC?`)) {
+            if (!confirm(`¿Are you sure to ${action === 'shutdown' ? 'shutdown' : 'sleep'} your PC?`)) {
                 return;
             }
         }
 
-        // Enviamos la acción al servidor
         socket.emit('media', action);
 
-        // Feedback visual al usuario
         this.classList.add('active');
         setTimeout(() => {
             this.classList.remove('active');
@@ -213,3 +209,12 @@ trackpad.addEventListener("touchend", (e) => {
 });
 
 window.addEventListener("orientationchange", sendDimensions);
+
+document.addEventListener('DOMContentLoaded', function() {
+    const menuToggle = document.getElementById('menuToggle');
+    const menuPanel = document.getElementById('menuPanel');
+    
+    menuToggle.addEventListener('click', function() {
+        menuPanel.classList.toggle('active');
+    });
+});
