@@ -9,7 +9,7 @@
     "start:local": "node index.js --host"
   },
   "keywords": [],
-  "author": "",
+  "author": "Sergio Lara Guardiola",
   "license": "ISC",
   "packageManager": "pnpm@10.6.5",
   "dependencies": {
