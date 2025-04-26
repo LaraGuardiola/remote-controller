@@ -3,7 +3,7 @@ const robot = require('robotjs');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
 const os = require('os');
-const { executeSystemCommand } = require('./utils.js');
+const { executeSystemCommand, simulateSpecialChar, openRocketLeague } = require('./utils.js');
 const { systemCommands } = require('./commands.js');
 
 const app = express();
@@ -112,6 +112,24 @@ io.on('connection', (socket) => {
     if (isDragging) {
       isDragging = false;
       robot.mouseToggle("up", "left");
+    }
+  });
+
+  socket.on('keyboard', (data) => {
+    const { key } = data;
+    try {
+      switch (key) {
+        case 'ñ':
+        case 'Ñ':
+          simulateSpecialChar(key);
+          break;
+        default:
+          robot.keyTap(key);
+          console.log(`Key pressed: ${key}`);
+          break;
+      }
+    } catch (error) {
+      console.error('Error simulating key press:', key, error);
     }
   });
 
@@ -238,6 +256,9 @@ io.on('connection', (socket) => {
           } else {
             console.log(`Not supported on ${platform}`);
           }
+          break;
+        case 'rocket-league':
+          openRocketLeague();
           break;
       }
     } catch (error) {

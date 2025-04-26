@@ -1,5 +1,3 @@
-import robot from 'robotjs';
-
 export const systemCommands = {
     volumeUp: {
         win32: 'powershell -c "(New-Object -COM WScript.Shell).SendKeys([char]175)"',
@@ -42,33 +40,33 @@ export const systemCommands = {
         linux: 'systemctl suspend'
     },
     shutdown: {
-        win32: 'shutdown /s /t 10 /c "Apagado remoto iniciado desde Unified Remote"',
+        win32: 'shutdown /s /t 10 /c "Shutting down from remote control."',
         darwin: 'osascript -e "tell app \\"System Events\\" to shut down"',
         linux: 'shutdown -h now'
     },
     taskManager: {
-        win32: "",
+        win32: "1",
         darwin: "",
         linux: ""
     },
     copy: {
-        win32: "",
+        win32: "1",
         darwin: "",
         linux: ""
     },
     paste: {
-        win32: "",
-        darwin: "",
-        linux: ""
+        win32: "1",
+        darwin: "1",
+        linux: "1"
     },
     undo: {
-        win32: "",
-        darwin: "",
-        linux: ""
+        win32: "1",
+        darwin: "1",
+        linux: "1"
     },
     redo: {
-        win32: "",
-        darwin: "",
-        linux: ""
+        win32: "1",
+        darwin: "1",
+        linux: "1"
     }
 };

@@ -63,8 +63,8 @@ const handleTouchMove = (e) => {
     const currentX = touch.clientX - trackpad.offsetLeft;
     const currentY = touch.clientY - trackpad.offsetTop;
 
-    const deltaX = currentX - startX[0];
-    const deltaY = currentY - startY[0];
+    const deltaX = +(currentX - startX[0]).toFixed(3);
+    const deltaY = +(currentY - startY[0]).toFixed(3);
 
     if (Math.abs(deltaX) > moveThreshold || Math.abs(deltaY) > moveThreshold) {
         moved = true;
@@ -210,11 +210,55 @@ trackpad.addEventListener("touchend", (e) => {
 
 window.addEventListener("orientationchange", sendDimensions);
 
-document.addEventListener('DOMContentLoaded', function() {
-    const menuToggle = document.getElementById('menuToggle');
-    const menuPanel = document.getElementById('menuPanel');
-    
-    menuToggle.addEventListener('click', function() {
+window.addEventListener("resize", () => {
+    document.querySelector('.container').style.height = `${window.innerHeight}px`;
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    const menuToggle = document.querySelector('#menuToggle');
+    const menuPanel = document.querySelector('#menuPanel');
+    const keyboardButton = document.querySelector('.circle');
+
+    menuToggle.addEventListener('click', () => {
         menuPanel.classList.toggle('active');
+    });
+
+    keyboardButton.addEventListener('click', () => {
+        if (document.body.querySelector('.keyboard-input')) {
+            document.body.querySelector('.keyboard-input').focus();
+            menuPanel.classList.remove('active');
+            return;
+        }
+        let input = document.createElement('input');
+        input.className = 'keyboard-input';
+        input.type = 'text';
+        input.style.position = 'absolute';
+        input.style.opacity = '0';
+        // There is no Ñ de España otherwise :)
+        input.setAttribute('lang', 'es');
+        input.setAttribute('accept-charset', 'UTF-8');
+        document.body.appendChild(input);
+        input.focus();
+        menuPanel.classList.remove('active');
+       
+        input.addEventListener('input', (event) => {
+            const currentValue = event.target.value;
+            if (currentValue.length > 0) {
+                const lastChar = currentValue.slice(-1);
+                socket.emit('keyboard', { key: lastChar });
+            }
+
+            event.target.value = '';
+        });
+
+        input.addEventListener('keydown', (event) => {
+            const { key } = event;
+            if (key === 'Backspace') {
+                socket.emit('keyboard', { key: key.toLowerCase() });
+            }
+            if(key === 'Enter') {
+                socket.emit('keyboard', { key: key.toLowerCase() });
+            }
+        })
     });
 });
