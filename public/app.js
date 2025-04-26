@@ -150,6 +150,13 @@ trackpad.addEventListener("touchmove", (e) => {
 
 trackpad.addEventListener("touchstart", (e) => {
     e.preventDefault();
+
+    // otherwise the keyboard input will be focused
+    const keyboardInput = document.querySelector('.keyboard-input');
+    if (keyboardInput && document.activeElement === keyboardInput) {
+        keyboardInput.blur(); 
+    }
+
     startX = [];
     startY = [];
     moved = false;
