@@ -101,6 +101,9 @@ const handleTwoFingerTouchEnd = (e) => {
 
 const startDragMode = () => {
     isDragging = true;
+    if ("vibrate" in navigator) {
+        navigator.vibrate(100);
+    }
     socket.emit("dragStart");
 }
 
@@ -122,7 +125,7 @@ const throttle = (callback, delay) => {
     };
 }
 
-const throttledMove = throttle(handleTouchMove, 16);
+const throttledMove = throttle(handleTouchMove, 8);
 
 document.querySelectorAll('.action-button').forEach(button => {
     button.addEventListener('click', function () {
