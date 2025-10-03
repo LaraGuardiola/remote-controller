@@ -37,118 +37,94 @@ const getDistance = (touch1, touch2) => {
   return Math.sqrt(dx * dx + dy * dy);
 };
 
-socket.on("connect", () => {
-  console.log(socket.id);
-  sendDimensions();
-});
+// Handle two-finger scrolling - check if both fingers move in same direction
+const handleTwoFingerScroll = (e, currentTime) => {
+  const finger1DeltaY = e.touches[0].clientY - trackpad.offsetTop - startY[0];
+  const finger2DeltaY = e.touches[1].clientY - trackpad.offsetTop - startY[1];
+  const scrollThreshold = 15;
 
-const handleTouchMove = (e) => {
-  if (e.touches.length > 1) {
-    isTwoFingerGesture = true;
+  // Check if both fingers moved in the same direction with sufficient distance
+  if (
+    Math.abs(finger1DeltaY) > scrollThreshold &&
+    Math.abs(finger2DeltaY) > scrollThreshold &&
+    currentTime - lastScrollTime > scrollThrottleDelay
+  ) {
+    // Both fingers moving up (negative Y)
+    if (finger1DeltaY < 0 && finger2DeltaY < 0) {
+      const avgDelta = Math.abs((finger1DeltaY + finger2DeltaY) / 2);
 
-    if (longPressTimer) {
-      clearTimeout(longPressTimer);
-      longPressTimer = null;
+      socket.emit("scroll", "up", avgDelta);
+      hasScrolled = true;
+      lastScrollTime = currentTime;
+
+      // Update startY positions to allow continuous scrolling
+      startY[0] = e.touches[0].clientY - trackpad.offsetTop;
+      startY[1] = e.touches[1].clientY - trackpad.offsetTop;
     }
+    // Both fingers moving down (positive Y)
+    else if (finger1DeltaY > 0 && finger2DeltaY > 0) {
+      const avgDelta = (finger1DeltaY + finger2DeltaY) / 2;
 
-    if (twoFingerTouchStart && e.touches.length === 2) {
-      const currentTime = Date.now();
+      socket.emit("scroll", "down", avgDelta);
+      hasScrolled = true;
+      lastScrollTime = currentTime;
 
-      // Handle two-finger scrolling - check if both fingers move in same direction
-      const finger1DeltaY =
-        e.touches[0].clientY - trackpad.offsetTop - startY[0];
-      const finger2DeltaY =
-        e.touches[1].clientY - trackpad.offsetTop - startY[1];
-      const scrollThreshold = 15;
+      // Update startY positions to allow continuous scrolling
+      startY[0] = e.touches[0].clientY - trackpad.offsetTop;
+      startY[1] = e.touches[1].clientY - trackpad.offsetTop;
+    }
+  }
+};
 
-      // Check if both fingers moved in the same direction with sufficient distance
-      if (
-        Math.abs(finger1DeltaY) > scrollThreshold &&
-        Math.abs(finger2DeltaY) > scrollThreshold &&
-        currentTime - lastScrollTime > scrollThrottleDelay
-      ) {
-        // Both fingers moving up (negative Y)
-        if (finger1DeltaY < 0 && finger2DeltaY < 0) {
-          const avgDelta = Math.abs((finger1DeltaY + finger2DeltaY) / 2);
+// Handle zoom gesture with continuous zooming (only if not scrolling)
+const handleTwoFingerZoom = (e, currentTime) => {
+  if (!hasScrolled) {
+    const currentDistance = getDistance(e.touches[0], e.touches[1]);
 
-          socket.emit("scroll", "up", avgDelta);
-          hasScrolled = true;
-          lastScrollTime = currentTime;
+    if (initialDistance > 0 && currentTime - lastZoomTime > zoomThrottleDelay) {
+      const distanceDiff = currentDistance - lastZoomDistance;
+      const zoomThreshold = 10;
 
-          // Update startY positions to allow continuous scrolling
-          startY[0] = e.touches[0].clientY - trackpad.offsetTop;
-          startY[1] = e.touches[1].clientY - trackpad.offsetTop;
-        }
-        // Both fingers moving down (positive Y)
-        else if (finger1DeltaY > 0 && finger2DeltaY > 0) {
-          const avgDelta = (finger1DeltaY + finger2DeltaY) / 2;
-
-          socket.emit("scroll", "down", avgDelta);
-          hasScrolled = true;
-          lastScrollTime = currentTime;
-
-          // Update startY positions to allow continuous scrolling
-          startY[0] = e.touches[0].clientY - trackpad.offsetTop;
-          startY[1] = e.touches[1].clientY - trackpad.offsetTop;
-        }
-      }
-
-      // Handle zoom gesture with continuous zooming (only if not scrolling)
-      if (!hasScrolled) {
-        const currentDistance = getDistance(e.touches[0], e.touches[1]);
-
-        if (
-          initialDistance > 0 &&
-          currentTime - lastZoomTime > zoomThrottleDelay
-        ) {
-          const distanceDiff = currentDistance - lastZoomDistance;
-          const zoomThreshold = 10;
-
-          if (Math.abs(distanceDiff) > zoomThreshold) {
-            const zoomDirection = distanceDiff > 0 ? "in" : "out";
-            // Scale down the magnitude to prevent excessive zooming
-            const scaledMagnitude = Math.min(Math.abs(distanceDiff) / 5, 10);
-            socket.emit("zoom", zoomDirection, scaledMagnitude);
-            lastZoomDistance = currentDistance;
-            lastZoomTime = currentTime;
-            hasZoomed = true;
-          }
-        }
-      }
-
-      const deltaX1 = Math.abs(
-        e.touches[0].clientX - trackpad.offsetLeft - startX[0],
-      );
-      const deltaY1 = Math.abs(
-        e.touches[0].clientY - trackpad.offsetTop - startY[0],
-      );
-      const deltaX2 = Math.abs(
-        e.touches[1].clientX - trackpad.offsetLeft - startX[1],
-      );
-      const deltaY2 = Math.abs(
-        e.touches[1].clientY - trackpad.offsetTop - startY[1],
-      );
-
-      if (
-        deltaX1 > twoFingerMoveThreshold ||
-        deltaY1 > twoFingerMoveThreshold ||
-        deltaX2 > twoFingerMoveThreshold ||
-        deltaY2 > twoFingerMoveThreshold
-      ) {
-        moved = true;
+      if (Math.abs(distanceDiff) > zoomThreshold) {
+        const zoomDirection = distanceDiff > 0 ? "in" : "out";
+        // Scale down the magnitude to prevent excessive zooming
+        const scaledMagnitude = Math.min(Math.abs(distanceDiff) / 5, 10);
+        socket.emit("zoom", zoomDirection, scaledMagnitude);
+        lastZoomDistance = currentDistance;
+        lastZoomTime = currentTime;
+        hasZoomed = true;
       }
     }
-
-    return;
   }
+};
 
-  if (isTwoFingerGesture && e.touches.length === 1) {
-    isTwoFingerGesture = false;
-    startX[0] = e.touches[0].clientX - trackpad.offsetLeft;
-    startY[0] = e.touches[0].clientY - trackpad.offsetTop;
-    return;
+// Handle two-finger movement detection for right-click prevention
+const handleTwoFingerMovement = (e) => {
+  const deltaX1 = Math.abs(
+    e.touches[0].clientX - trackpad.offsetLeft - startX[0],
+  );
+  const deltaY1 = Math.abs(
+    e.touches[0].clientY - trackpad.offsetTop - startY[0],
+  );
+  const deltaX2 = Math.abs(
+    e.touches[1].clientX - trackpad.offsetLeft - startX[1],
+  );
+  const deltaY2 = Math.abs(
+    e.touches[1].clientY - trackpad.offsetTop - startY[1],
+  );
+
+  if (
+    deltaX1 > twoFingerMoveThreshold ||
+    deltaY1 > twoFingerMoveThreshold ||
+    deltaX2 > twoFingerMoveThreshold ||
+    deltaY2 > twoFingerMoveThreshold
+  ) {
+    moved = true;
   }
+};
 
+// Handle single finger movement for mouse cursor
+const handleSingleFingerMovement = (e) => {
   const touch = e.touches[0];
   const currentX = touch.clientX - trackpad.offsetLeft;
   const currentY = touch.clientY - trackpad.offsetTop;
@@ -175,6 +151,49 @@ const handleTouchMove = (e) => {
 
   startX[0] = currentX;
   startY[0] = currentY;
+};
+
+socket.on("connect", () => {
+  console.log(socket.id);
+  sendDimensions();
+});
+
+const handleTouchMove = (e) => {
+  // Handle multiple finger gestures
+  if (e.touches.length > 1) {
+    isTwoFingerGesture = true;
+
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      longPressTimer = null;
+    }
+
+    if (twoFingerTouchStart && e.touches.length === 2) {
+      const currentTime = Date.now();
+
+      // Handle two-finger scrolling
+      handleTwoFingerScroll(e, currentTime);
+
+      // Handle zoom gesture (only if not scrolling)
+      handleTwoFingerZoom(e, currentTime);
+
+      // Handle movement detection for right-click prevention
+      handleTwoFingerMovement(e);
+    }
+
+    return;
+  }
+
+  // Handle transition from two-finger to one-finger gesture
+  if (isTwoFingerGesture && e.touches.length === 1) {
+    isTwoFingerGesture = false;
+    startX[0] = e.touches[0].clientX - trackpad.offsetLeft;
+    startY[0] = e.touches[0].clientY - trackpad.offsetTop;
+    return;
+  }
+
+  // Handle single finger movement
+  handleSingleFingerMovement(e);
 };
 
 const handleTouchClick = (e) => {
