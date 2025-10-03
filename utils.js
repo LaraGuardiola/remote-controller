@@ -1,5 +1,4 @@
 import { exec } from "child_process";
-import robot from "robotjs";
 import os from "os";
 
 export const getIp = () => {
