@@ -2,13 +2,8 @@ const express = require("express");
 const robot = require("robotjs");
 const { createServer } = require("http");
 const { Server } = require("socket.io");
-const { getIp } = require("./utils.js");
 const os = require("os");
-const {
-  executeSystemCommand,
-  simulateSpecialChar,
-  openRocketLeague,
-} = require("./utils.js");
+const { executeSystemCommand, openRocketLeague, getIp } = require("./utils.js");
 const { systemCommands } = require("./commands.js");
 
 const app = express();

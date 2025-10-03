@@ -30,17 +30,6 @@ export const executeSystemCommand = (command) => {
   });
 };
 
-export const simulateSpecialChar = (key) => {
-  const asciiCode = key === "ñ" ? 164 : 165;
-  robot.keyToggle("alt", "down");
-  const textDigits = asciiCode.toString();
-  for (let i = 0; i < textDigits.length; i++) {
-    robot.keyTap(`numpad_${textDigits[i]}`);
-  }
-  robot.keyToggle("alt", "up");
-  console.log(`Key pressed: ${key}`);
-};
-
 export const openRocketLeague = () => {
   const rocketLeagueProcessName = "RocketLeague.exe";
   const rocketLeagueAppId = "252950";
