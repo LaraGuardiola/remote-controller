@@ -153,17 +153,26 @@ io.on("connection", (socket) => {
     const { key } = data;
     try {
       switch (key) {
-        case "ñ":
-        case "Ñ":
-          simulateSpecialChar(key);
+        case "backspace":
+          robot.keyTap("backspace");
+          console.log("Backspace pressed");
+          break;
+        case "enter":
+          robot.keyTap("enter");
+          console.log("Enter pressed");
+          break;
+        case "tab":
+          robot.keyTap("tab");
+          console.log("Tab pressed");
           break;
         default:
-          robot.keyTap(key);
-          console.log(`Key pressed: ${key}`);
+          // Use typeString for all characters to bypass keyboard layout issues
+          robot.typeString(key);
+          console.log(`Typed character: ${key}`);
           break;
       }
     } catch (error) {
-      console.error("Error simulating key press:", key, error);
+      console.error("Error typing character:", key, error);
     }
   });
 

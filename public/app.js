@@ -153,6 +153,47 @@ const handleSingleFingerMovement = (e) => {
   startY[0] = currentY;
 };
 
+// Create and setup the virtual keyboard input element
+const createKeyboardInput = () => {
+  let input = document.createElement("input");
+  input.className = "keyboard-input";
+  input.type = "text";
+  input.style.position = "absolute";
+  input.style.opacity = "0";
+  // There is no Ñ de España otherwise :)
+  input.setAttribute("lang", "es");
+  input.setAttribute("accept-charset", "UTF-8");
+  document.body.appendChild(input);
+  return input;
+};
+
+// Handle character input from virtual keyboard
+const handleKeyboardInput = (event) => {
+  const currentValue = event.target.value;
+  if (currentValue.length > 0) {
+    const lastChar = currentValue.slice(-1);
+    socket.emit("keyboard", { key: lastChar });
+  }
+  event.target.value = "";
+};
+
+// Handle special keys (Backspace, Enter) from virtual keyboard
+const handleKeyboardSpecialKeys = (event) => {
+  const { key } = event;
+  if (key === "Backspace") {
+    socket.emit("keyboard", { key: key.toLowerCase() });
+  }
+  if (key === "Enter") {
+    socket.emit("keyboard", { key: key.toLowerCase() });
+  }
+};
+
+// Setup keyboard functionality
+const setupKeyboard = (input) => {
+  input.addEventListener("input", handleKeyboardInput);
+  input.addEventListener("keydown", handleKeyboardSpecialKeys);
+};
+
 socket.on("connect", () => {
   console.log(socket.id);
   sendDimensions();
@@ -381,41 +422,18 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   keyboardButton.addEventListener("click", () => {
-    if (document.body.querySelector(".keyboard-input")) {
-      document.body.querySelector(".keyboard-input").focus();
+    // Check if keyboard input already exists
+    const existingInput = document.body.querySelector(".keyboard-input");
+    if (existingInput) {
+      existingInput.focus();
       menuPanel.classList.remove("active");
       return;
     }
-    let input = document.createElement("input");
-    input.className = "keyboard-input";
-    input.type = "text";
-    input.style.position = "absolute";
-    input.style.opacity = "0";
-    // There is no Ñ de España otherwise :)
-    input.setAttribute("lang", "es");
-    input.setAttribute("accept-charset", "UTF-8");
-    document.body.appendChild(input);
+
+    // Create new keyboard input
+    const input = createKeyboardInput();
+    setupKeyboard(input);
     input.focus();
     menuPanel.classList.remove("active");
-
-    input.addEventListener("input", (event) => {
-      const currentValue = event.target.value;
-      if (currentValue.length > 0) {
-        const lastChar = currentValue.slice(-1);
-        socket.emit("keyboard", { key: lastChar });
-      }
-
-      event.target.value = "";
-    });
-
-    input.addEventListener("keydown", (event) => {
-      const { key } = event;
-      if (key === "Backspace") {
-        socket.emit("keyboard", { key: key.toLowerCase() });
-      }
-      if (key === "Enter") {
-        socket.emit("keyboard", { key: key.toLowerCase() });
-      }
-    });
   });
 });
