@@ -123,6 +123,24 @@ io.on("connection", (socket) => {
     }
   });
 
+  socket.on("scroll", (direction, magnitude) => {
+    console.log(`Scroll ${direction} received with magnitude:`, magnitude);
+
+    const scrollAmount = Math.max(1, Math.round(magnitude)) * 4;
+
+    try {
+      if (direction === "up") {
+        console.log(`Scrolling up with mouse wheel amount: ${scrollAmount}`);
+        robot.scrollMouse(0, scrollAmount);
+      } else if (direction === "down") {
+        console.log(`Scrolling down with mouse wheel amount: ${scrollAmount}`);
+        robot.scrollMouse(0, -scrollAmount);
+      }
+    } catch (error) {
+      console.error("Error with scrollMouse:", error);
+    }
+  });
+
   socket.on("disconnect", () => {
     console.log("Client disconnected:", socket.id);
     if (isDragging) {

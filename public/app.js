@@ -19,7 +19,10 @@ let initialDistance = 0;
 let lastZoomDistance = 0;
 let lastZoomTime = 0;
 let hasZoomed = false;
-const zoomThrottleDelay = 200;
+let lastScrollTime = 0;
+let hasScrolled = false;
+const zoomThrottleDelay = 100;
+const scrollThrottleDelay = 80;
 
 const sendDimensions = () => {
   socket.emit("dimensions", {
@@ -49,25 +52,67 @@ const handleTouchMove = (e) => {
     }
 
     if (twoFingerTouchStart && e.touches.length === 2) {
-      // Handle zoom gesture with continuous zooming
-      const currentDistance = getDistance(e.touches[0], e.touches[1]);
       const currentTime = Date.now();
 
-      if (
-        initialDistance > 0 &&
-        currentTime - lastZoomTime > zoomThrottleDelay
-      ) {
-        const distanceDiff = currentDistance - lastZoomDistance;
-        const zoomThreshold = 10;
+      // Handle two-finger scrolling - check if both fingers move in same direction
+      const finger1DeltaY =
+        e.touches[0].clientY - trackpad.offsetTop - startY[0];
+      const finger2DeltaY =
+        e.touches[1].clientY - trackpad.offsetTop - startY[1];
+      const scrollThreshold = 15;
 
-        if (Math.abs(distanceDiff) > zoomThreshold) {
-          const zoomDirection = distanceDiff > 0 ? "in" : "out";
-          // Scale down the magnitude to prevent excessive zooming
-          const scaledMagnitude = Math.min(Math.abs(distanceDiff) / 5, 10);
-          socket.emit("zoom", zoomDirection, scaledMagnitude);
-          lastZoomDistance = currentDistance;
-          lastZoomTime = currentTime;
-          hasZoomed = true;
+      // Check if both fingers moved in the same direction with sufficient distance
+      if (
+        Math.abs(finger1DeltaY) > scrollThreshold &&
+        Math.abs(finger2DeltaY) > scrollThreshold &&
+        currentTime - lastScrollTime > scrollThrottleDelay
+      ) {
+        // Both fingers moving up (negative Y)
+        if (finger1DeltaY < 0 && finger2DeltaY < 0) {
+          const avgDelta = Math.abs((finger1DeltaY + finger2DeltaY) / 2);
+
+          socket.emit("scroll", "up", avgDelta);
+          hasScrolled = true;
+          lastScrollTime = currentTime;
+
+          // Update startY positions to allow continuous scrolling
+          startY[0] = e.touches[0].clientY - trackpad.offsetTop;
+          startY[1] = e.touches[1].clientY - trackpad.offsetTop;
+        }
+        // Both fingers moving down (positive Y)
+        else if (finger1DeltaY > 0 && finger2DeltaY > 0) {
+          const avgDelta = (finger1DeltaY + finger2DeltaY) / 2;
+
+          socket.emit("scroll", "down", avgDelta);
+          hasScrolled = true;
+          lastScrollTime = currentTime;
+
+          // Update startY positions to allow continuous scrolling
+          startY[0] = e.touches[0].clientY - trackpad.offsetTop;
+          startY[1] = e.touches[1].clientY - trackpad.offsetTop;
+        }
+      }
+
+      // Handle zoom gesture with continuous zooming (only if not scrolling)
+      if (!hasScrolled) {
+        const currentDistance = getDistance(e.touches[0], e.touches[1]);
+
+        if (
+          initialDistance > 0 &&
+          currentTime - lastZoomTime > zoomThrottleDelay
+        ) {
+          const distanceDiff = currentDistance - lastZoomDistance;
+          const zoomThreshold = 10;
+
+          if (Math.abs(distanceDiff) > zoomThreshold) {
+            const zoomDirection = distanceDiff > 0 ? "in" : "out";
+            // Scale down the magnitude to prevent excessive zooming
+            const scaledMagnitude = Math.min(Math.abs(distanceDiff) / 5, 10);
+            socket.emit("zoom", zoomDirection, scaledMagnitude);
+            lastZoomDistance = currentDistance;
+            lastZoomTime = currentTime;
+            hasZoomed = true;
+          }
         }
       }
 
@@ -137,14 +182,27 @@ const handleTouchClick = (e) => {
 };
 
 const handleTwoFingerTouchEnd = (e) => {
-  if (twoFingerTouchStart && e.touches.length === 0 && !moved && !hasZoomed) {
+  if (
+    twoFingerTouchStart &&
+    e.touches.length === 0 &&
+    !moved &&
+    !hasZoomed &&
+    !hasScrolled
+  ) {
     socket.emit("click", "right");
   }
+
+  // Send scrollEnd event to stop any pending scroll operations
+  if (hasScrolled) {
+    socket.emit("scrollEnd");
+  }
+
   twoFingerTouchStart = false;
   isTwoFingerGesture = false;
   initialDistance = 0;
   lastZoomDistance = 0;
   hasZoomed = false;
+  hasScrolled = false;
 };
 
 const startDragMode = () => {
@@ -228,6 +286,7 @@ trackpad.addEventListener("touchstart", (e) => {
     initialDistance = getDistance(e.touches[0], e.touches[1]);
     lastZoomDistance = initialDistance;
     hasZoomed = false;
+    hasScrolled = false;
 
     if (longPressTimer) {
       clearTimeout(longPressTimer);
@@ -271,11 +330,17 @@ trackpad.addEventListener("touchend", (e) => {
   }
 
   if (e.touches.length === 0) {
+    // Send scrollEnd event to stop any pending scroll operations
+    if (hasScrolled) {
+      socket.emit("scrollEnd");
+    }
+
     endDragMode();
     isTwoFingerGesture = false;
     initialDistance = 0;
     lastZoomDistance = 0;
     hasZoomed = false;
+    hasScrolled = false;
   }
 
   moved = false;
