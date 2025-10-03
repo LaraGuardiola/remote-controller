@@ -1,19 +1,25 @@
-const express = require('express');
-const robot = require('robotjs');
-const { createServer } = require('http');
-const { Server } = require('socket.io');
-const os = require('os');
-const { executeSystemCommand, simulateSpecialChar, openRocketLeague } = require('./utils.js');
-const { systemCommands } = require('./commands.js');
+const express = require("express");
+const robot = require("robotjs");
+const { createServer } = require("http");
+const { Server } = require("socket.io");
+const { getIp } = require("./utils.js");
+const os = require("os");
+const {
+  executeSystemCommand,
+  simulateSpecialChar,
+  openRocketLeague,
+} = require("./utils.js");
+const { systemCommands } = require("./commands.js");
 
 const app = express();
 const port = 3000;
+const ip = getIp();
 
 const httpServer = createServer(app);
 
 const io = new Server(httpServer, {
   cors: {
-    origin: '*', // for testing purposes
+    origin: "*", // for testing purposes
   },
   maxHttpBufferSize: 1e3,
   pingTimeout: 60000,
@@ -22,7 +28,7 @@ const io = new Server(httpServer, {
 const deviceDimensions = new Map();
 
 app.use(express.json());
-app.use(express.static('public'))
+app.use(express.static("public"));
 
 let pendingDeltaX = 0;
 let pendingDeltaY = 0;
@@ -40,8 +46,8 @@ const processMouseQueue = () => {
   const currentPos = robot.getMousePos();
   const sensitivity = isDragging ? 3 : 5;
 
-  let newX = currentPos.x + (pendingDeltaX * sensitivity);
-  let newY = currentPos.y + (pendingDeltaY * sensitivity);
+  let newX = currentPos.x + pendingDeltaX * sensitivity;
+  let newY = currentPos.y + pendingDeltaY * sensitivity;
 
   const screenSize = robot.getScreenSize();
   newX = Math.max(0, Math.min(newX, screenSize.width - 1));
@@ -53,17 +59,17 @@ const processMouseQueue = () => {
   pendingDeltaY = 0;
 
   setTimeout(processMouseQueue, 8);
-}
+};
 
-io.on('connection', (socket) => {
-  console.log('Client connected:', socket.id);
+io.on("connection", (socket) => {
+  console.log("Client connected:", socket.id);
 
-  socket.on('dimensions', (data) => {
-    console.log('Device dimensions:', data);
+  socket.on("dimensions", (data) => {
+    console.log("Device dimensions:", data);
     deviceDimensions.set(socket.id, data);
   });
 
-  socket.on('movement', (deltaX, deltaY) => {
+  socket.on("movement", (deltaX, deltaY) => {
     console.log("Movement received:", deltaX, deltaY);
 
     pendingDeltaX += deltaX;
@@ -75,12 +81,12 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('click', (button) => {
+  socket.on("click", (button) => {
     console.log(`Click ${button} received`);
-    if (button === 'right') {
-      robot.mouseClick('right');
+    if (button === "right") {
+      robot.mouseClick("right");
     } else {
-      robot.mouseClick('left');
+      robot.mouseClick("left");
     }
   });
 
@@ -107,20 +113,20 @@ io.on('connection', (socket) => {
     robot.mouseToggle("up", "left");
   });
 
-  socket.on('disconnect', () => {
-    console.log('Client disconnected:', socket.id);
+  socket.on("disconnect", () => {
+    console.log("Client disconnected:", socket.id);
     if (isDragging) {
       isDragging = false;
       robot.mouseToggle("up", "left");
     }
   });
 
-  socket.on('keyboard', (data) => {
+  socket.on("keyboard", (data) => {
     const { key } = data;
     try {
       switch (key) {
-        case 'ñ':
-        case 'Ñ':
+        case "ñ":
+        case "Ñ":
           simulateSpecialChar(key);
           break;
         default:
@@ -129,145 +135,150 @@ io.on('connection', (socket) => {
           break;
       }
     } catch (error) {
-      console.error('Error simulating key press:', key, error);
+      console.error("Error simulating key press:", key, error);
     }
   });
 
-  socket.on('media', (command) => {
+  socket.on("media", (command) => {
     try {
       switch (command) {
-        case 'shutdown':
+        case "shutdown":
           if (systemCommands.shutdown[platform]) {
             executeSystemCommand(systemCommands.shutdown[platform])
-              .then(() => console.log('PC shutting down...'))
-              .catch(err => console.error('Error shutting down PC:', err));
+              .then(() => console.log("PC shutting down..."))
+              .catch((err) => console.error("Error shutting down PC:", err));
           } else {
             console.log(`Not supported on ${platform}`);
           }
           break;
-        case 'volume-up':
+        case "volume-up":
           if (systemCommands.volumeUp[platform]) {
             executeSystemCommand(systemCommands.volumeUp[platform])
-              .then(() => console.log('Raising volume...'))
-              .catch(err => console.error('Error raising volume:', err));
+              .then(() => console.log("Raising volume..."))
+              .catch((err) => console.error("Error raising volume:", err));
           } else {
             console.log(`Not supported on ${platform}`);
           }
           break;
-        case 'volume-down':
+        case "volume-down":
           if (systemCommands.volumeDown[platform]) {
             executeSystemCommand(systemCommands.volumeDown[platform])
-              .then(() => console.log('Lowering volume...'))
-              .catch(err => console.error('Error lowering volume:', err));
+              .then(() => console.log("Lowering volume..."))
+              .catch((err) => console.error("Error lowering volume:", err));
           } else {
             console.log(`Not supported on ${platform}`);
           }
           break;
-        case 'play-pause':
+        case "play-pause":
           if (systemCommands.playPause[platform]) {
             executeSystemCommand(systemCommands.playPause[platform])
-              .then(() => console.log('Play / stop ...'))
-              .catch(err => console.error('Error playing/stopping media:', err));
+              .then(() => console.log("Play / stop ..."))
+              .catch((err) =>
+                console.error("Error playing/stopping media:", err),
+              );
           } else {
             console.log(`Not supported on ${platform}`);
           }
           break;
-        case 'mute':
+        case "mute":
           if (systemCommands.mute[platform]) {
             executeSystemCommand(systemCommands.mute[platform])
-              .then(() => console.log('Muted / unmuted media...'))
-              .catch(err => console.error('Error muting media:', err));
+              .then(() => console.log("Muted / unmuted media..."))
+              .catch((err) => console.error("Error muting media:", err));
           } else {
             console.log(`Not supported on ${platform}`);
           }
           break;
-        case 'prev-track':
+        case "prev-track":
           if (systemCommands.prevTrack[platform]) {
             executeSystemCommand(systemCommands.prevTrack[platform])
-              .then(() => console.log('Previous track...'))
-              .catch(err => console.error('Error playing previous track:', err));
+              .then(() => console.log("Previous track..."))
+              .catch((err) =>
+                console.error("Error playing previous track:", err),
+              );
           } else {
             console.log(`Not supported on ${platform}`);
           }
           break;
-        case 'next-track':
+        case "next-track":
           if (systemCommands.nextTrack[platform]) {
             executeSystemCommand(systemCommands.nextTrack[platform])
-              .then(() => console.log('next track...'))
-              .catch(err => console.error('Error playing next track:', err));
+              .then(() => console.log("next track..."))
+              .catch((err) => console.error("Error playing next track:", err));
           } else {
             console.log(`Not supported on ${platform}`);
           }
           break;
-        case 'lock':
+        case "lock":
           if (systemCommands.lock[platform]) {
             executeSystemCommand(systemCommands.lock[platform])
-              .then(() => console.log('Locking pc...'))
-              .catch(err => console.error('Error locking pc:', err));
+              .then(() => console.log("Locking pc..."))
+              .catch((err) => console.error("Error locking pc:", err));
           } else {
             console.log(`Not supported on ${platform}`);
           }
           break;
-        case 'sleep':
+        case "sleep":
           if (systemCommands.sleep[platform]) {
             executeSystemCommand(systemCommands.sleep[platform])
-              .then(() => console.log('Going to sleep 😴...'))
-              .catch(err => console.error('Error before going to sleep:', err));
+              .then(() => console.log("Going to sleep 😴..."))
+              .catch((err) =>
+                console.error("Error before going to sleep:", err),
+              );
           } else {
             console.log(`Not supported on ${platform}`);
           }
           break;
-        case 'task-manager':
+        case "task-manager":
           if (systemCommands.taskManager[platform]) {
-            robot.keyTap('escape', ['control', 'shift']);
-            console.log('Opening task manager...')
+            robot.keyTap("escape", ["control", "shift"]);
+            console.log("Opening task manager...");
           } else {
             console.log(`Not supported on ${platform}`);
           }
           break;
-        case 'copy':
+        case "copy":
           if (systemCommands.copy[platform]) {
-            robot.keyTap('c', 'control')
-            console.log('Copying...')
+            robot.keyTap("c", "control");
+            console.log("Copying...");
           } else {
             console.log(`Not supported on ${platform}`);
           }
           break;
-        case 'paste':
+        case "paste":
           if (systemCommands.paste[platform]) {
-            robot.keyTap('v', 'control')
-            console.log('Paste...')
+            robot.keyTap("v", "control");
+            console.log("Paste...");
           } else {
             console.log(`Not supported on ${platform}`);
           }
           break;
-        case 'undo':
+        case "undo":
           if (systemCommands.undo[platform]) {
-            robot.keyTap('z', 'control')
-            console.log('Undo...')
+            robot.keyTap("z", "control");
+            console.log("Undo...");
           } else {
             console.log(`Not supported on ${platform}`);
           }
           break;
-        case 'redo':
+        case "redo":
           if (systemCommands.redo[platform]) {
-            robot.keyTap('y', 'control')
-            console.log('Redo...')
+            robot.keyTap("y", "control");
+            console.log("Redo...");
           } else {
             console.log(`Not supported on ${platform}`);
           }
           break;
-        case 'rocket-league':
+        case "rocket-league":
           openRocketLeague();
           break;
       }
     } catch (error) {
-      console.error('Error executing command:', error);
+      console.error("Error executing command:", error);
     }
-  })
+  });
 });
 
 httpServer.listen(port, () => {
-  console.log(`Server listening on http://localhost:${port}`);
+  console.log(`Remote controller listening on http://${ip}:${port}`);
 });
-console.log(`Not supported on ${platform}`);
