@@ -180,131 +180,49 @@ io.on("connection", (socket) => {
     try {
       switch (command) {
         case "shutdown":
-          if (systemCommands.shutdown[platform]) {
-            executeSystemCommand(systemCommands.shutdown[platform])
-              .then(() => console.log("PC shutting down..."))
-              .catch((err) => console.error("Error shutting down PC:", err));
-          } else {
-            console.log(`Not supported on ${platform}`);
-          }
+          executeCommand("shutdown");
           break;
         case "volume-up":
-          if (systemCommands.volumeUp[platform]) {
-            executeSystemCommand(systemCommands.volumeUp[platform])
-              .then(() => console.log("Raising volume..."))
-              .catch((err) => console.error("Error raising volume:", err));
-          } else {
-            console.log(`Not supported on ${platform}`);
-          }
+          executeCommand("volumeUp");
           break;
         case "volume-down":
-          if (systemCommands.volumeDown[platform]) {
-            executeSystemCommand(systemCommands.volumeDown[platform])
-              .then(() => console.log("Lowering volume..."))
-              .catch((err) => console.error("Error lowering volume:", err));
-          } else {
-            console.log(`Not supported on ${platform}`);
-          }
+          executeCommand("volumeDown");
           break;
         case "play-pause":
-          if (systemCommands.playPause[platform]) {
-            executeSystemCommand(systemCommands.playPause[platform])
-              .then(() => console.log("Play / stop ..."))
-              .catch((err) =>
-                console.error("Error playing/stopping media:", err),
-              );
-          } else {
-            console.log(`Not supported on ${platform}`);
-          }
+          executeCommand("playPause");
           break;
         case "mute":
-          if (systemCommands.mute[platform]) {
-            executeSystemCommand(systemCommands.mute[platform])
-              .then(() => console.log("Muted / unmuted media..."))
-              .catch((err) => console.error("Error muting media:", err));
-          } else {
-            console.log(`Not supported on ${platform}`);
-          }
+          executeCommand("mute");
           break;
         case "prev-track":
-          if (systemCommands.prevTrack[platform]) {
-            executeSystemCommand(systemCommands.prevTrack[platform])
-              .then(() => console.log("Previous track..."))
-              .catch((err) =>
-                console.error("Error playing previous track:", err),
-              );
-          } else {
-            console.log(`Not supported on ${platform}`);
-          }
+          executeCommand("prevTrack");
           break;
         case "next-track":
-          if (systemCommands.nextTrack[platform]) {
-            executeSystemCommand(systemCommands.nextTrack[platform])
-              .then(() => console.log("next track..."))
-              .catch((err) => console.error("Error playing next track:", err));
-          } else {
-            console.log(`Not supported on ${platform}`);
-          }
+          executeCommand("nextTrack");
           break;
         case "lock":
-          if (systemCommands.lock[platform]) {
-            executeSystemCommand(systemCommands.lock[platform])
-              .then(() => console.log("Locking pc..."))
-              .catch((err) => console.error("Error locking pc:", err));
-          } else {
-            console.log(`Not supported on ${platform}`);
-          }
+          executeCommand("lock");
           break;
         case "sleep":
-          if (systemCommands.sleep[platform]) {
-            executeSystemCommand(systemCommands.sleep[platform])
-              .then(() => console.log("Going to sleep 😴..."))
-              .catch((err) =>
-                console.error("Error before going to sleep:", err),
-              );
-          } else {
-            console.log(`Not supported on ${platform}`);
-          }
+          executeCommand("sleep");
           break;
         case "task-manager":
-          if (systemCommands.taskManager[platform]) {
-            robot.keyTap("escape", ["control", "shift"]);
-            console.log("Opening task manager...");
-          } else {
-            console.log(`Not supported on ${platform}`);
-          }
+          executeKeyboardShortcut("taskManager", "escape", [
+            "control",
+            "shift",
+          ]);
           break;
         case "copy":
-          if (systemCommands.copy[platform]) {
-            robot.keyTap("c", "control");
-            console.log("Copying...");
-          } else {
-            console.log(`Not supported on ${platform}`);
-          }
+          executeKeyboardShortcut("copy", "c");
           break;
         case "paste":
-          if (systemCommands.paste[platform]) {
-            robot.keyTap("v", "control");
-            console.log("Paste...");
-          } else {
-            console.log(`Not supported on ${platform}`);
-          }
+          executeKeyboardShortcut("paste", "v");
           break;
         case "undo":
-          if (systemCommands.undo[platform]) {
-            robot.keyTap("z", "control");
-            console.log("Undo...");
-          } else {
-            console.log(`Not supported on ${platform}`);
-          }
+          executeKeyboardShortcut("undo", "z");
           break;
         case "redo":
-          if (systemCommands.redo[platform]) {
-            robot.keyTap("y", "control");
-            console.log("Redo...");
-          } else {
-            console.log(`Not supported on ${platform}`);
-          }
+          executeKeyboardShortcut("redo", "y");
           break;
         case "rocket-league":
           openRocketLeague();
@@ -315,6 +233,29 @@ io.on("connection", (socket) => {
     }
   });
 });
+
+// Simple helper for system commands that gets messages from config
+const executeCommand = (commandKey) => {
+  const config = systemCommands[commandKey];
+  if (config && config[platform]) {
+    executeSystemCommand(config[platform])
+      .then(() => console.log(config.successMessage))
+      .catch((err) => console.error(`${config.errorMessage}:`, err));
+  } else {
+    console.log(`Command "${commandKey}" not supported on ${platform}`);
+  }
+};
+
+// Simple helper for keyboard shortcuts
+const executeKeyboardShortcut = (commandKey, key, modifier = "control") => {
+  const config = systemCommands[commandKey];
+  if (config && config[platform]) {
+    robot.keyTap(key, modifier);
+    console.log(config.successMessage);
+  } else {
+    console.log(`${commandKey} not supported on ${platform}`);
+  }
+};
 
 httpServer.listen(port, () => {
   console.log(`Remote controller listening on http://${ip}:${port}`);
