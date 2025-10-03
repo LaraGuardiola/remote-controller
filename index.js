@@ -113,6 +113,16 @@ io.on("connection", (socket) => {
     robot.mouseToggle("up", "left");
   });
 
+  socket.on("zoom", (direction, magnitude) => {
+    console.log(`Zoom ${direction} received`);
+
+    if (direction === "in") {
+      robot.keyTap("+", "control");
+    } else if (direction === "out") {
+      robot.keyTap("-", "control");
+    }
+  });
+
   socket.on("disconnect", () => {
     console.log("Client disconnected:", socket.id);
     if (isDragging) {

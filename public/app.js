@@ -15,12 +15,23 @@ let longPressTimer = null;
 const longPressDuration = 500;
 let isDragging = false;
 let isTwoFingerGesture = false;
+let initialDistance = 0;
+let lastZoomDistance = 0;
+let lastZoomTime = 0;
+let hasZoomed = false;
+const zoomThrottleDelay = 200;
 
 const sendDimensions = () => {
   socket.emit("dimensions", {
     width: trackpad.clientWidth,
     height: trackpad.clientHeight,
   });
+};
+
+const getDistance = (touch1, touch2) => {
+  const dx = touch1.clientX - touch2.clientX;
+  const dy = touch1.clientY - touch2.clientY;
+  return Math.sqrt(dx * dx + dy * dy);
 };
 
 socket.on("connect", () => {
@@ -38,6 +49,28 @@ const handleTouchMove = (e) => {
     }
 
     if (twoFingerTouchStart && e.touches.length === 2) {
+      // Handle zoom gesture with continuous zooming
+      const currentDistance = getDistance(e.touches[0], e.touches[1]);
+      const currentTime = Date.now();
+
+      if (
+        initialDistance > 0 &&
+        currentTime - lastZoomTime > zoomThrottleDelay
+      ) {
+        const distanceDiff = currentDistance - lastZoomDistance;
+        const zoomThreshold = 10;
+
+        if (Math.abs(distanceDiff) > zoomThreshold) {
+          const zoomDirection = distanceDiff > 0 ? "in" : "out";
+          // Scale down the magnitude to prevent excessive zooming
+          const scaledMagnitude = Math.min(Math.abs(distanceDiff) / 5, 10);
+          socket.emit("zoom", zoomDirection, scaledMagnitude);
+          lastZoomDistance = currentDistance;
+          lastZoomTime = currentTime;
+          hasZoomed = true;
+        }
+      }
+
       const deltaX1 = Math.abs(
         e.touches[0].clientX - trackpad.offsetLeft - startX[0],
       );
@@ -104,11 +137,14 @@ const handleTouchClick = (e) => {
 };
 
 const handleTwoFingerTouchEnd = (e) => {
-  if (twoFingerTouchStart && e.touches.length === 0 && !moved) {
+  if (twoFingerTouchStart && e.touches.length === 0 && !moved && !hasZoomed) {
     socket.emit("click", "right");
   }
   twoFingerTouchStart = false;
   isTwoFingerGesture = false;
+  initialDistance = 0;
+  lastZoomDistance = 0;
+  hasZoomed = false;
 };
 
 const startDragMode = () => {
@@ -189,6 +225,9 @@ trackpad.addEventListener("touchstart", (e) => {
   if (e.touches.length === 2) {
     twoFingerTouchStart = true;
     isTwoFingerGesture = true;
+    initialDistance = getDistance(e.touches[0], e.touches[1]);
+    lastZoomDistance = initialDistance;
+    hasZoomed = false;
 
     if (longPressTimer) {
       clearTimeout(longPressTimer);
@@ -234,6 +273,9 @@ trackpad.addEventListener("touchend", (e) => {
   if (e.touches.length === 0) {
     endDragMode();
     isTwoFingerGesture = false;
+    initialDistance = 0;
+    lastZoomDistance = 0;
+    hasZoomed = false;
   }
 
   moved = false;
