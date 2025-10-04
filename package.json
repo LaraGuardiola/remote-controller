@@ -21,5 +21,6 @@
     "onlyBuiltDependencies": [
       "robotjs"
     ]
-  }
+  },
+  "type": "module"
 }

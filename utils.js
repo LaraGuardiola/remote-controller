@@ -1,6 +1,7 @@
 import { exec } from "child_process";
 import { systemCommands } from "./commands.js";
 import os from "os";
+import robot from "robotjs";
 
 const platform = os.platform();
 
@@ -65,12 +66,14 @@ export const openRocketLeague = () => {
   const checkCommand = `tasklist /NH /FI "IMAGENAME eq ${rocketLeagueProcessName}"`;
   const launchCommand = `start steam://rungameid/${rocketLeagueAppId}`;
 
-  console.log(`Checking if ${rocketLeagueProcessName} is running...`);
+  console.log(
+    `[UTILITIES] Checking if ${rocketLeagueProcessName} is running...`,
+  );
 
   exec(checkCommand, (error, stdout, stderr) => {
     if (error) {
       console.error(
-        `Error al ejecutar tasklist para comprobar el proceso: ${error.message}`,
+        `[UTILITIES] Error al ejecutar tasklist para comprobar el proceso: ${error.message}`,
       );
       return;
     }
@@ -79,16 +82,16 @@ export const openRocketLeague = () => {
       stdout &&
       stdout.toLowerCase().includes(rocketLeagueProcessName.toLowerCase())
     ) {
-      console.log(`${rocketLeagueProcessName} is already running.`);
+      console.log(`[UTILITIES]${rocketLeagueProcessName} is already running.`);
     } else {
       console.log(
-        `${rocketLeagueProcessName} has not been launched. Launching via Steam...`,
+        `[UTILITIES] ${rocketLeagueProcessName} has not been launched. Launching via Steam...`,
       );
 
       exec(launchCommand, (launchError, launchStdout, launchStderr) => {
         if (launchError) {
           console.error(
-            `Error executing launch command for Steam: ${launchError.message}`,
+            `[UTILITIES] Error executing launch command for Steam: ${launchError.message}`,
           );
           return;
         }

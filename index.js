@@ -1,8 +1,13 @@
-const express = require("express");
-const robot = require("robotjs");
-const { createServer } = require("http");
-const { Server } = require("socket.io");
-const { executeCommand, openRocketLeague, getIp } = require("./utils.js");
+import express from "express";
+import robot from "robotjs";
+import { createServer } from "http";
+import { Server } from "socket.io";
+import {
+  executeCommand,
+  executeKeyboardShortcut,
+  openRocketLeague,
+  getIp,
+} from "./utils.js";
 
 const app = express();
 const port = 3000;

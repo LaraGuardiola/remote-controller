@@ -5,7 +5,7 @@ export const systemCommands = {
     darwin:
       'osascript -e "set volume output volume (output volume of (get volume settings) + 10)"',
     linux: "amixer -q sset Master 5%+",
-    successMessage: "[UTILITIES] Volume increased",
+    successMessage: "[MEDIA] Volume increased",
     errorMessage: "Error increasing volume",
   },
   volumeDown: {
@@ -56,7 +56,7 @@ export const systemCommands = {
     win32: "rundll32.exe user32.dll,LockWorkStation",
     darwin: "pmset displaysleepnow",
     linux: "xdg-screensaver lock",
-    successMessage: "[MEDIA] Computer locked",
+    successMessage: "[SYSTEM] Computer locked",
     errorMessage: "Error locking computer",
   },
   sleep: {
@@ -77,7 +77,7 @@ export const systemCommands = {
     win32: "1",
     darwin: "",
     linux: "",
-    successMessage: "[SYSTEM] Task Manager opened",
+    successMessage: "[UTILITIES] Task Manager opened",
     errorMessage: "Error opening Task Manager",
   },
   copy: {
