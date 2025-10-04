@@ -94,7 +94,29 @@ body {
 }
 
 .menu-panel.active {
-    max-height: 500px;
+    max-height: min(100vh, 500px);
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--blue-btn) var(--menu-bg);
+}
+
+.menu-panel::-webkit-scrollbar {
+    width: 8px;
+}
+
+.menu-panel::-webkit-scrollbar-track {
+    background: var(--menu-bg);
+    border-radius: 4px;
+}
+
+.menu-panel::-webkit-scrollbar-thumb {
+    background: var(--blue-btn);
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+}
+
+.menu-panel::-webkit-scrollbar-thumb:hover {
+    background: var(--blue-btn-hover);
 }
 
 .section {
@@ -123,6 +145,7 @@ body {
     background-color: var(--blue-btn);
     color: white;
     height: 40px;
+    min-height: 36px;
     border: 2px solid #ffffff;
     border-radius: 4px;
     font-size: 14px;
@@ -267,5 +290,70 @@ body {
     .action-button {
         height: 36px;
         font-size: 12px;
+    }
+
+    .menu-panel.active {
+        max-height: min(100vh, 400px);
+    }
+}
+
+@media (max-height: 480px) {
+    .action-button {
+        height: 32px;
+        font-size: 11px;
+    }
+
+    .button-grid {
+        gap: 6px;
+        padding: 8px;
+    }
+
+    .section-title {
+        font-size: 12px;
+        padding: 4px 10px;
+    }
+
+    .menu-panel.active {
+        max-height: min(100vh, 320px);
+    }
+}
+
+@media (max-height: 400px) {
+    .action-button {
+        height: 28px;
+        font-size: 10px;
+    }
+
+    .button-grid {
+        gap: 4px;
+        padding: 6px;
+    }
+
+    .menu-panel.active {
+        max-height: min(100vh, 250px);
+    }
+}
+
+/* Square aspect ratio screens (like flip phones) */
+@media (aspect-ratio: 1/1) {
+    .menu-panel.active {
+        max-height: 100vh;
+    }
+
+    .action-button {
+        height: 32px;
+        font-size: 11px;
+    }
+
+    .button-grid {
+        gap: 5px;
+        padding: 8px;
+    }
+}
+
+/* Very wide screens in landscape */
+@media (min-aspect-ratio: 16/9) {
+    .menu-panel.active {
+        max-height: 100vh;
     }
 }
