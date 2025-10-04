@@ -2,9 +2,7 @@ const express = require("express");
 const robot = require("robotjs");
 const { createServer } = require("http");
 const { Server } = require("socket.io");
-const os = require("os");
-const { executeSystemCommand, openRocketLeague, getIp } = require("./utils.js");
-const { systemCommands } = require("./commands.js");
+const { executeCommand, openRocketLeague, getIp } = require("./utils.js");
 
 const app = express();
 const port = 3000;
@@ -20,17 +18,15 @@ const io = new Server(httpServer, {
   pingTimeout: 60000,
   pingInterval: 25000,
 });
+
 const deviceDimensions = new Map();
-
-app.use(express.json());
-app.use(express.static("public"));
-
 let pendingDeltaX = 0;
 let pendingDeltaY = 0;
 let processingQueue = false;
 let isDragging = false;
 
-const platform = os.platform();
+app.use(express.json());
+app.use(express.static("public"));
 
 const processMouseQueue = () => {
   if (pendingDeltaX === 0 && pendingDeltaY === 0) {
@@ -57,15 +53,15 @@ const processMouseQueue = () => {
 };
 
 io.on("connection", (socket) => {
-  console.log("Client connected:", socket.id);
+  console.log("[CLIENT] Client connected:", socket.id);
 
   socket.on("dimensions", (data) => {
-    console.log("Device dimensions:", data);
+    console.log("[CLIENT] Device dimensions:", data);
     deviceDimensions.set(socket.id, data);
   });
 
   socket.on("movement", (deltaX, deltaY) => {
-    console.log("Movement received:", deltaX, deltaY);
+    console.log("[MOUSE EVENT] Movement received:", deltaX, deltaY);
 
     pendingDeltaX += deltaX;
     pendingDeltaY += deltaY;
@@ -77,7 +73,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("click", (button) => {
-    console.log(`Click ${button} received`);
+    console.log(`[CLICK EVENT] Click ${button} received`);
     if (button === "right") {
       robot.mouseClick("right");
     } else {
@@ -86,13 +82,13 @@ io.on("connection", (socket) => {
   });
 
   socket.on("dragStart", () => {
-    console.log("Dragging received");
+    console.log("[DRAG EVENT] Dragging received");
     isDragging = true;
     robot.mouseToggle("down", "left");
   });
 
   socket.on("drag", (deltaX, deltaY) => {
-    console.log("Dragging:", deltaX, deltaY);
+    console.log("[DRAG EVENT] Dragging:", deltaX, deltaY);
     pendingDeltaX += deltaX;
     pendingDeltaY += deltaY;
 
@@ -103,13 +99,13 @@ io.on("connection", (socket) => {
   });
 
   socket.on("dragEnd", () => {
-    console.log("End dragging");
+    console.log("[DRAG EVENT] End dragging");
     isDragging = false;
     robot.mouseToggle("up", "left");
   });
 
   socket.on("zoom", (direction, magnitude) => {
-    console.log(`Zoom ${direction} received`);
+    console.log(`[ZOOM EVENT] Zoom ${direction} received`);
 
     if (direction === "in") {
       robot.keyTap("+", "control");
@@ -119,16 +115,16 @@ io.on("connection", (socket) => {
   });
 
   socket.on("scroll", (direction, magnitude) => {
-    console.log(`Scroll ${direction} received with magnitude:`, magnitude);
-
     const scrollAmount = Math.max(1, Math.round(magnitude)) * 4;
+    console.log(
+      `[SCROLL EVENT] Scroll ${direction} received with magnitude:`,
+      scrollAmount,
+    );
 
     try {
       if (direction === "up") {
-        console.log(`Scrolling up with mouse wheel amount: ${scrollAmount}`);
         robot.scrollMouse(0, -scrollAmount);
       } else if (direction === "down") {
-        console.log(`Scrolling down with mouse wheel amount: ${scrollAmount}`);
         robot.scrollMouse(0, scrollAmount);
       }
     } catch (error) {
@@ -137,7 +133,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("disconnect", () => {
-    console.log("Client disconnected:", socket.id);
+    console.log("[CLIENT] Client disconnected:", socket.id);
     if (isDragging) {
       isDragging = false;
       robot.mouseToggle("up", "left");
@@ -150,20 +146,20 @@ io.on("connection", (socket) => {
       switch (key) {
         case "backspace":
           robot.keyTap("backspace");
-          console.log("Backspace pressed");
+          console.log("[KEYBOARD EVENT] Backspace pressed");
           break;
         case "enter":
           robot.keyTap("enter");
-          console.log("Enter pressed");
+          console.log("[KEYBOARD EVENT] Enter pressed");
           break;
         case "tab":
           robot.keyTap("tab");
-          console.log("Tab pressed");
+          console.log("[KEYBOARD EVENT] Tab pressed");
           break;
         default:
           // Use typeString for all characters to bypass keyboard layout issues
           robot.typeString(key);
-          console.log(`Typed character: ${key}`);
+          console.log(`[KEYBOARD EVENT] Typed character: ${key}`);
           break;
       }
     } catch (error) {
@@ -228,29 +224,6 @@ io.on("connection", (socket) => {
     }
   });
 });
-
-// Simple helper for system commands that gets messages from config
-const executeCommand = (commandKey) => {
-  const config = systemCommands[commandKey];
-  if (config && config[platform]) {
-    executeSystemCommand(config[platform])
-      .then(() => console.log(config.successMessage))
-      .catch((err) => console.error(`${config.errorMessage}:`, err));
-  } else {
-    console.log(`Command "${commandKey}" not supported on ${platform}`);
-  }
-};
-
-// Simple helper for keyboard shortcuts
-const executeKeyboardShortcut = (commandKey, key, modifier = "control") => {
-  const config = systemCommands[commandKey];
-  if (config && config[platform]) {
-    robot.keyTap(key, modifier);
-    console.log(config.successMessage);
-  } else {
-    console.log(`${commandKey} not supported on ${platform}`);
-  }
-};
 
 httpServer.listen(port, () => {
   console.log(`Remote controller listening on http://${ip}:${port}`);

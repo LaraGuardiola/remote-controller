@@ -1,5 +1,8 @@
 import { exec } from "child_process";
+import { systemCommands } from "./commands.js";
 import os from "os";
+
+const platform = os.platform();
 
 export const getIp = () => {
   const interfaces = os.networkInterfaces();
@@ -27,6 +30,33 @@ export const executeSystemCommand = (command) => {
       resolve(stdout || stderr);
     });
   });
+};
+
+// Simple helper for system commands that gets messages from config
+export const executeCommand = (commandKey) => {
+  const config = systemCommands[commandKey];
+  if (config && config[platform]) {
+    executeSystemCommand(config[platform])
+      .then(() => console.log(config.successMessage))
+      .catch((err) => console.error(`${config.errorMessage}:`, err));
+  } else {
+    console.log(`Command "${commandKey}" not supported on ${platform}`);
+  }
+};
+
+// Simple helper for keyboard shortcuts
+export const executeKeyboardShortcut = (
+  commandKey,
+  key,
+  modifier = "control",
+) => {
+  const config = systemCommands[commandKey];
+  if (config && config[platform]) {
+    robot.keyTap(key, modifier);
+    console.log(config.successMessage);
+  } else {
+    console.log(`${commandKey} not supported on ${platform}`);
+  }
 };
 
 export const openRocketLeague = () => {

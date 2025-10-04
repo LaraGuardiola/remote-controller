@@ -206,7 +206,7 @@ body {
     flex: 1;
     background-color: var(--trackpad-bg);
     border: 2px solid var(--border-color);
-    border-radius: 8px;
+    border-radius: 8px 8px 24px 24px;
     position: relative;
     image-rendering: pixelated;
     display: flex;
@@ -355,5 +355,8 @@ body {
 @media (min-aspect-ratio: 16/9) {
     .menu-panel.active {
         max-height: 100vh;
+    }
+    .trackpad-label {
+        height: 0;
     }
 }
