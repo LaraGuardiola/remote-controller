@@ -1,7 +1,9 @@
-import express from "express";
 import robot from "robotjs";
 import { createServer } from "http";
 import { Server } from "socket.io";
+import { readFile } from "fs";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
 import {
   executeCommand,
   executeKeyboardShortcut,
@@ -9,11 +11,32 @@ import {
   getIp,
 } from "./utils.js";
 
-const app = express();
 const port = 3000;
 const ip = getIp();
 
-const httpServer = createServer(app);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+const httpServer = createServer((req, res) => {
+  let filePath = req.url === "/" ? "/index.html" : req.url;
+  const fullPath = join(__dirname, "public", filePath);
+  readFile(fullPath, (err, data) => {
+    if (err) {
+      res.writeHead(404);
+      res.end("Not found");
+    } else {
+      let contentType = "text/plain";
+      if (filePath.endsWith(".html")) contentType = "text/html";
+      if (filePath.endsWith(".css")) contentType = "text/css";
+      if (filePath.endsWith(".js")) contentType = "application/javascript";
+      if (filePath.endsWith(".svg")) contentType = "image/svg+xml";
+      res.writeHead(200, { "Content-Type": contentType });
+      res.end(data);
+    }
+  });
+});
+
+// const httpServer = createServer(app);
 
 const io = new Server(httpServer, {
   cors: {
@@ -29,9 +52,6 @@ let pendingDeltaX = 0;
 let pendingDeltaY = 0;
 let processingQueue = false;
 let isDragging = false;
-
-app.use(express.json());
-app.use(express.static("public"));
 
 const processMouseQueue = () => {
   if (pendingDeltaX === 0 && pendingDeltaY === 0) {
