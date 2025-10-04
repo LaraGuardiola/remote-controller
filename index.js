@@ -126,10 +126,10 @@ io.on("connection", (socket) => {
     try {
       if (direction === "up") {
         console.log(`Scrolling up with mouse wheel amount: ${scrollAmount}`);
-        robot.scrollMouse(0, scrollAmount);
+        robot.scrollMouse(0, -scrollAmount);
       } else if (direction === "down") {
         console.log(`Scrolling down with mouse wheel amount: ${scrollAmount}`);
-        robot.scrollMouse(0, -scrollAmount);
+        robot.scrollMouse(0, scrollAmount);
       }
     } catch (error) {
       console.error("Error with scrollMouse:", error);

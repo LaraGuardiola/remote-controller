@@ -76,23 +76,27 @@ const handleTwoFingerScroll = (e, currentTime) => {
   }
 };
 
-// Handle zoom gesture with continuous zooming (only if not scrolling)
+// Handle zoom gesture with continuous zooming (only if not scrolling or dragging)
 const handleTwoFingerZoom = (e, currentTime) => {
-  if (!hasScrolled) {
+  if (!hasScrolled && !isDragging) {
     const currentDistance = getDistance(e.touches[0], e.touches[1]);
 
     if (initialDistance > 0 && currentTime - lastZoomTime > zoomThrottleDelay) {
-      const distanceDiff = currentDistance - lastZoomDistance;
-      const zoomThreshold = 10;
+      // Add delay to zoom detection to let scrolling be detected first
+      const zoomDelay = 150; // Give scroll detection priority for 150ms
+      if (currentTime - lastScrollTime > zoomDelay) {
+        const distanceDiff = currentDistance - lastZoomDistance;
+        const zoomThreshold = 10;
 
-      if (Math.abs(distanceDiff) > zoomThreshold) {
-        const zoomDirection = distanceDiff > 0 ? "in" : "out";
-        // Scale down the magnitude to prevent excessive zooming
-        const scaledMagnitude = Math.min(Math.abs(distanceDiff) / 5, 10);
-        socket.emit("zoom", zoomDirection, scaledMagnitude);
-        lastZoomDistance = currentDistance;
-        lastZoomTime = currentTime;
-        hasZoomed = true;
+        if (Math.abs(distanceDiff) > zoomThreshold) {
+          const zoomDirection = distanceDiff > 0 ? "in" : "out";
+          // Scale down the magnitude to prevent excessive zooming
+          const scaledMagnitude = Math.min(Math.abs(distanceDiff) / 5, 10);
+          socket.emit("zoom", zoomDirection, scaledMagnitude);
+          lastZoomDistance = currentDistance;
+          lastZoomTime = currentTime;
+          hasZoomed = true;
+        }
       }
     }
   }
@@ -131,6 +135,15 @@ const handleSingleFingerMovement = (e) => {
 
   const deltaX = +(currentX - startX[0]).toFixed(3);
   const deltaY = +(currentY - startY[0]).toFixed(3);
+
+  // Filter out micro-movements and 0,0 noise
+  const minimumMovement = 0.5;
+  if (
+    Math.abs(deltaX) < minimumMovement &&
+    Math.abs(deltaY) < minimumMovement
+  ) {
+    return;
+  }
 
   if (Math.abs(deltaX) > moveThreshold || Math.abs(deltaY) > moveThreshold) {
     moved = true;
