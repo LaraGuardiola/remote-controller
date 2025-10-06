@@ -1,6 +1,17 @@
 import { io } from "https://cdn.socket.io/4.8.1/socket.io.esm.min.js";
+// import { LocalNotifications } from "@capacitor/local-notifications";
 
-const socket = io();
+const ip = prompt("Enter your IP digits:");
+
+let localAddress = `http://192.168.1.${ip}:3000`;
+
+const socket = io(localAddress, {
+  transports: ["polling", "websocket"],
+  timeout: 10000,
+  forceNew: true,
+  upgrade: true,
+  rememberUpgrade: false,
+});
 const trackpad = document.querySelector(".trackpad");
 
 let startX = [];
@@ -207,8 +218,17 @@ const setupKeyboard = (input) => {
   input.addEventListener("keydown", handleKeyboardSpecialKeys);
 };
 
-socket.on("connect", () => {
+socket.on("connect", async () => {
   console.log(socket.id);
+  // await LocalNotifications.schedule({
+  //   notifications: [
+  //     {
+  //       title: "Conectado al servidor",
+  //       body: `IP: ${localAddress}`,
+  //       id: 1,
+  //     },
+  //   ],
+  // });
   sendDimensions();
 });
 

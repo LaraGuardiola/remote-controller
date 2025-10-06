@@ -1,0 +1,20 @@
+{
+  "appId": "com.sergiolara.remotecontroller",
+  "appName": "Remote Controller",
+  "webDir": "public",
+  "server": {
+    "androidScheme": "http",
+    "allowNavigation": ["*"],
+    "cleartext": true
+  },
+  "android": {
+    "allowMixedContent": true,
+    "usesCleartextTraffic": true,
+    "webSecurity": false
+  },
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    }
+  }
+}
