@@ -1,7 +1,7 @@
 {
   "appId": "com.sergiolara.remotecontroller",
   "appName": "Remote Controller",
-  "webDir": "public",
+  "webDir": "dist",
   "server": {
     "androidScheme": "http",
     "allowNavigation": ["*"],
@@ -15,6 +15,10 @@
   "plugins": {
     "CapacitorHttp": {
       "enabled": true
+    },
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_icon_config_sample",
+      "iconColor": "#488AFF"
     }
   }
 }

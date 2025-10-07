@@ -4,9 +4,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node index.js",
-    "start:local": "node index.js --host"
+    "dev": "concurrently \"pnpm run backend\" \"pnpm run frontend\"",
+    "backend": "node index.js",
+    "frontend": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview",
+    "start": "node index.js"
   },
   "keywords": [],
   "author": "Sergio Lara Guardiola",
@@ -27,6 +30,8 @@
   },
   "type": "module",
   "devDependencies": {
-    "@capacitor/assets": "^3.0.5"
+    "@capacitor/assets": "^3.0.5",
+    "concurrently": "^9.2.1",
+    "vite": "^7.1.9"
   }
 }

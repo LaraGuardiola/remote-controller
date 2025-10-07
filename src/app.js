@@ -1,5 +1,6 @@
 import { io } from "https://cdn.socket.io/4.8.1/socket.io.esm.min.js";
-// import { LocalNotifications } from "@capacitor/local-notifications";
+import { Capacitor } from "@capacitor/core";
+import { LocalNotifications } from "@capacitor/local-notifications";
 
 const ip = prompt("Enter your IP digits:");
 
@@ -220,15 +221,26 @@ const setupKeyboard = (input) => {
 
 socket.on("connect", async () => {
   console.log(socket.id);
-  // await LocalNotifications.schedule({
-  //   notifications: [
-  //     {
-  //       title: "Conectado al servidor",
-  //       body: `IP: ${localAddress}`,
-  //       id: 1,
-  //     },
-  //   ],
-  // });
+
+  if (Capacitor.isNativePlatform()) {
+    try {
+      const permResult = await LocalNotifications.requestPermissions();
+      if (permResult.display === "granted") {
+        await LocalNotifications.schedule({
+          notifications: [
+            {
+              title: "Remote Controller",
+              body: `Connected to ${localAddress}`,
+              id: 1,
+            },
+          ],
+        });
+      }
+    } catch (error) {
+      console.error("Error con notificaciones:", error);
+    }
+  }
+
   sendDimensions();
 });
 
@@ -445,7 +457,26 @@ window.addEventListener("resize", () => {
   document.querySelector(".container").style.height = `${window.innerHeight}px`;
 });
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+  if (Capacitor.isNativePlatform()) {
+    try {
+      const permResult = await LocalNotifications.requestPermissions();
+      if (permResult.display === "granted") {
+        await LocalNotifications.schedule({
+          notifications: [
+            {
+              title: "Remote Controller",
+              body: "App started successfully",
+              id: 2,
+            },
+          ],
+        });
+      }
+    } catch (error) {
+      console.error("Error al configurar notificaciones:", error);
+    }
+  }
+
   const menuToggle = document.querySelector("#menuToggle");
   const menuPanel = document.querySelector("#menuPanel");
   const keyboardButton = document.querySelector(".circle");
