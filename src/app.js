@@ -37,6 +37,7 @@ const zoomThrottleDelay = 100;
 const scrollThrottleDelay = 80;
 let lastTwoFingerGestureTime = 0;
 const twoFingerGestureClickDelay = 200;
+let rightClickTriggered = false;
 
 const sendDimensions = () => {
   socket.emit("dimensions", {
@@ -298,6 +299,7 @@ const handleTwoFingerTouchEnd = (e) => {
     !hasScrolled
   ) {
     socket.emit("click", "right");
+    rightClickTriggered = true;
   }
 
   // Send scrollEnd event to stop any pending scroll operations
@@ -429,6 +431,7 @@ trackpad.addEventListener("touchend", (e) => {
     clickPossible &&
     e.touches.length === 0 &&
     !isTwoFingerGesture &&
+    !rightClickTriggered &&
     Date.now() - lastTwoFingerGestureTime > twoFingerGestureClickDelay
   ) {
     handleTouchClick(e);
@@ -451,6 +454,7 @@ trackpad.addEventListener("touchend", (e) => {
     lastZoomDistance = 0;
     hasZoomed = false;
     hasScrolled = false;
+    rightClickTriggered = false;
   }
 
   moved = false;
