@@ -223,31 +223,6 @@ const setupKeyboard = (input) => {
   input.addEventListener("keydown", handleKeyboardSpecialKeys);
 };
 
-socket.on("connect", async () => {
-  console.log(socket.id);
-
-  if (Capacitor.isNativePlatform()) {
-    try {
-      const permResult = await LocalNotifications.requestPermissions();
-      if (permResult.display === "granted") {
-        await LocalNotifications.schedule({
-          notifications: [
-            {
-              title: "Connection established",
-              body: `Connected to ${localAddress}`,
-              id: 1,
-            },
-          ],
-        });
-      }
-    } catch (error) {
-      console.error("Error with notifications:", error);
-    }
-  }
-
-  sendDimensions();
-});
-
 const handleTouchMove = (e) => {
   // Handle multiple finger gestures
   if (e.touches.length > 1) {
@@ -498,4 +473,47 @@ document.addEventListener("DOMContentLoaded", async () => {
     input.focus();
     menuPanel.classList.remove("active");
   });
+});
+
+// Socket connection events
+socket.on("connect", async () => {
+  console.log(socket.id);
+
+  if (Capacitor.isNativePlatform()) {
+    try {
+      await LocalNotifications.schedule({
+        notifications: [
+          {
+            title: "Connection established",
+            body: `Connected to ${localAddress}`,
+            id: 1,
+          },
+        ],
+      });
+    } catch (error) {
+      console.error("Error with notifications:", error);
+    }
+  }
+
+  sendDimensions();
+});
+
+socket.on("disconnect", async () => {
+  console.log("Disconnected from server");
+
+  if (Capacitor.isNativePlatform()) {
+    try {
+      await LocalNotifications.schedule({
+        notifications: [
+          {
+            title: "Connection lost",
+            body: `Disconnected from ${localAddress}`,
+            id: 3,
+          },
+        ],
+      });
+    } catch (error) {
+      console.error("Error with notifications:", error);
+    }
+  }
 });
