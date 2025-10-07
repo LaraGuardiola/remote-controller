@@ -61,7 +61,8 @@ const handleTwoFingerScroll = (e, currentTime) => {
   if (
     Math.abs(finger1DeltaY) > scrollThreshold &&
     Math.abs(finger2DeltaY) > scrollThreshold &&
-    currentTime - lastScrollTime > scrollThrottleDelay
+    currentTime - lastScrollTime > scrollThrottleDelay &&
+    currentTime - lastZoomTime > 150
   ) {
     // Both fingers moving up (negative Y)
     if (finger1DeltaY < 0 && finger2DeltaY < 0) {
