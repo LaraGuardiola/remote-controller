@@ -1,4 +1,4 @@
-import { io } from "https://cdn.socket.io/4.8.1/socket.io.esm.min.js";
+import { io } from "socket.io-client";
 import { Capacitor } from "@capacitor/core";
 import { LocalNotifications } from "@capacitor/local-notifications";
 
@@ -35,6 +35,8 @@ let lastScrollTime = 0;
 let hasScrolled = false;
 const zoomThrottleDelay = 100;
 const scrollThrottleDelay = 80;
+let lastTwoFingerGestureTime = 0;
+const twoFingerGestureClickDelay = 200;
 
 const sendDimensions = () => {
   socket.emit("dimensions", {
@@ -229,7 +231,7 @@ socket.on("connect", async () => {
         await LocalNotifications.schedule({
           notifications: [
             {
-              title: "Remote Controller",
+              title: "Connection established",
               body: `Connected to ${localAddress}`,
               id: 1,
             },
@@ -237,7 +239,7 @@ socket.on("connect", async () => {
         });
       }
     } catch (error) {
-      console.error("Error con notificaciones:", error);
+      console.error("Error with notifications:", error);
     }
   }
 
@@ -425,13 +427,15 @@ trackpad.addEventListener("touchend", (e) => {
     !moved &&
     clickPossible &&
     e.touches.length === 0 &&
-    !isTwoFingerGesture
+    !isTwoFingerGesture &&
+    Date.now() - lastTwoFingerGestureTime > twoFingerGestureClickDelay
   ) {
     handleTouchClick(e);
   }
 
   if (twoFingerTouchStart && e.touches.length === 0) {
     handleTwoFingerTouchEnd(e);
+    lastTwoFingerGestureTime = Date.now();
   }
 
   if (e.touches.length === 0) {
@@ -460,20 +464,9 @@ window.addEventListener("resize", () => {
 document.addEventListener("DOMContentLoaded", async () => {
   if (Capacitor.isNativePlatform()) {
     try {
-      const permResult = await LocalNotifications.requestPermissions();
-      if (permResult.display === "granted") {
-        await LocalNotifications.schedule({
-          notifications: [
-            {
-              title: "Remote Controller",
-              body: "App started successfully",
-              id: 2,
-            },
-          ],
-        });
-      }
+      await LocalNotifications.requestPermissions();
     } catch (error) {
-      console.error("Error al configurar notificaciones:", error);
+      console.error("Error setting up notifications:", error);
     }
   }
 

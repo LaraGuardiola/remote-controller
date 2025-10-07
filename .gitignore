@@ -51,6 +51,7 @@ coverage/
 android/
 ios/
 capacitor.config.ts.orig
+android/local.properties
 
 # Keystores (security)
 *.keystore

@@ -1,8 +1,7 @@
 import { exec } from "child_process";
 
 const taskName = "RemoteController";
-const scriptPath =
-  "C:\\Users\\webde\\Documents\\Code\\remote-controller\\index.js";
+const scriptPath = "C:\\{PATH TO REMOTE CONTROLLER}\\index.js";
 const nodePath = process.execPath;
 
 const command = `schtasks /create /tn "${taskName}" /tr "'${nodePath}' '${scriptPath}'" /sc onlogon /rl highest /f`;
