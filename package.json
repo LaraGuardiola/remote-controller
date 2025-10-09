@@ -20,13 +20,14 @@
     "@capacitor/cli": "^7.4.3",
     "@capacitor/core": "^7.4.3",
     "@capacitor/local-notifications": "^7.0.3",
-    "robotjs": "https://github.com/octalmage/robotjs.git#8ae87a91f06f49559f0db387bc2bd1ea01419880",
+    "robotjs_addon": "^0.6.5",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
-      "robotjs"
+      "robotjs",
+      "robotjs_addon"
     ]
   },
   "type": "module",

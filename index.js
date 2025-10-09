@@ -1,4 +1,4 @@
-import robot from "robotjs";
+import robot from "robotjs_addon";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import { readFile } from "fs";

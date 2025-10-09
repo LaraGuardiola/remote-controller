@@ -1,7 +1,7 @@
 import { exec } from "child_process";
 import { systemCommands } from "./commands.js";
 import os from "os";
-import robot from "robotjs";
+import robot from "robotjs_addon";
 
 const platform = os.platform();
 
