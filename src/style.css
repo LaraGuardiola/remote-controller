@@ -265,7 +265,7 @@ body {
 
 .circle {
     position: absolute;
-    bottom: 40px;
+    bottom: 70px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
@@ -289,7 +289,7 @@ body {
 }
 
 .circle:active {
-    bottom: 38px;
+    bottom: 68px;
     -webkit-tap-highlight-color: transparent;
 }
 
@@ -367,5 +367,6 @@ body {
     }
     .trackpad-label {
         height: 0;
+        margin-bottom: 6em;
     }
 }

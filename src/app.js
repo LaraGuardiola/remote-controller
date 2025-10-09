@@ -9,7 +9,7 @@ let socket = null;
 
 // scan by batch, or you will DDOS yourself
 const scanNetwork = async () => {
-  console.log("Escaneando red...");
+  console.log("Scanning network...");
   const batchSize = 10;
 
   for (let start = 1; start <= 254; start += batchSize) {
