@@ -9,61 +9,71 @@ let socket = null;
 
 // scan by batch, or you will DDOS yourself
 const scanNetwork = async () => {
-  console.log("Scanning network...");
+  const subnetsToScan = ["192.168.1.", "192.168.0."];
 
-  const batchSize = 10;
-  const requestTimeout = 800;
-  const isNative = Capacitor.isNativePlatform();
+  for (const baseSubnet of subnetsToScan) {
+    console.log(`Scanning network: ${baseSubnet}x`);
 
-  for (let start = 1; start <= 254; start += batchSize) {
-    const batch = [];
-    const end = Math.min(start + batchSize - 1, 254);
+    const batchSize = 10;
+    const requestTimeout = 800;
+    const isNative = Capacitor.isNativePlatform();
 
-    for (let ipNum = start; ipNum <= end; ipNum++) {
-      const url = `http://192.168.1.${ipNum}:3000/health`;
+    for (let start = 1; start <= 254; start += batchSize) {
+      const batch = [];
+      const end = Math.min(start + batchSize - 1, 254);
+
+      for (let ipNum = start; ipNum <= end; ipNum++) {
+        const url = `http://${baseSubnet}${ipNum}:3000/health`;
+
+        if (isNative) {
+          const promise = CapacitorHttp.request({
+            method: "GET",
+            url: url,
+            connectTimeout: requestTimeout,
+            readTimeout: requestTimeout,
+          })
+            .then((response) => (response.status === 200 ? ipNum : null))
+            .catch(() => null);
+
+          batch.push(promise);
+        } else {
+          const promise = fetch(url, {
+            signal: AbortSignal.timeout(800),
+          })
+            .then(() => ipNum)
+            .catch(() => null);
+
+          batch.push(promise);
+        }
+      }
+
+      let foundIp;
 
       if (isNative) {
-        const promise = CapacitorHttp.request({
-          method: "GET",
-          url: url,
-          connectTimeout: requestTimeout,
-          readTimeout: requestTimeout,
-        })
-          .then((response) => (response.status === 200 ? ipNum : null))
-          .catch(() => null);
-
-        batch.push(promise);
+        const results = await Promise.all(batch);
+        foundIp = results.find((ip) => ip !== null);
       } else {
-        const promise = fetch(url, {
-          signal: AbortSignal.timeout(800),
-        })
-          .then(() => ipNum)
-          .catch(() => null);
-
-        batch.push(promise);
+        const results = await Promise.allSettled(batch);
+        foundIp = results.find(
+          (r) => r.status === "fulfilled" && r.value !== null,
+        )?.value;
       }
+
+      if (foundIp) {
+        const fullIp = `${baseSubnet}${foundIp}`;
+        console.log(
+          `¡Server found at IP: ${fullIp} (Platform: ${isNative ? "Native" : "Web"})!`,
+        );
+
+        return fullIp;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, isNative ? 50 : 100));
     }
 
-    let foundIp;
-
-    if (isNative) {
-      const results = await Promise.all(batch);
-      foundIp = results.find((ip) => ip !== null);
-    } else {
-      const results = await Promise.allSettled(batch);
-      foundIp = results.find(
-        (r) => r.status === "fulfilled" && r.value !== null,
-      )?.value;
-    }
-
-    if (foundIp) {
-      console.log(
-        `¡Server found at IP: ${foundIp} (Platform: ${isNative ? "Native" : "Web"})!`,
-      );
-      return foundIp;
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, isNative ? 50 : 100));
+    console.log(
+      `Subnet ${baseSubnet} scan finished, moving to the next one...`,
+    );
   }
 
   console.log("Scan finished, server not found.");
@@ -71,8 +81,8 @@ const scanNetwork = async () => {
 };
 
 const initConnection = async () => {
-  ip = (await scanNetwork()) || prompt("Enter your IP digits:");
-  localAddress = `http://192.168.1.${ip}:3000`;
+  ip = (await scanNetwork()) || prompt("Enter your local IPv4:");
+  localAddress = `http://${ip}:3000`;
 
   socket = io(localAddress, {
     transports: ["polling", "websocket"],
