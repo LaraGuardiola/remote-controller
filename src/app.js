@@ -1,5 +1,5 @@
 import { io } from "socket.io-client";
-import { Capacitor } from "@capacitor/core";
+import { Capacitor, CapacitorHttp } from "@capacitor/core";
 import { LocalNotifications } from "@capacitor/local-notifications";
 
 // network variables
@@ -10,35 +10,63 @@ let socket = null;
 // scan by batch, or you will DDOS yourself
 const scanNetwork = async () => {
   console.log("Scanning network...");
+
   const batchSize = 10;
+  const requestTimeout = 800;
+  const isNative = Capacitor.isNativePlatform();
 
   for (let start = 1; start <= 254; start += batchSize) {
     const batch = [];
     const end = Math.min(start + batchSize - 1, 254);
 
     for (let ipNum = start; ipNum <= end; ipNum++) {
-      batch.push(
-        fetch(`http://192.168.1.${ipNum}:3000/health`, {
+      const url = `http://192.168.1.${ipNum}:3000/health`;
+
+      if (isNative) {
+        const promise = CapacitorHttp.request({
+          method: "GET",
+          url: url,
+          connectTimeout: requestTimeout,
+          readTimeout: requestTimeout,
+        })
+          .then((response) => (response.status === 200 ? ipNum : null))
+          .catch(() => null);
+
+        batch.push(promise);
+      } else {
+        const promise = fetch(url, {
           signal: AbortSignal.timeout(800),
         })
           .then(() => ipNum)
-          .catch(() => null),
+          .catch(() => null);
+
+        batch.push(promise);
+      }
+    }
+
+    let foundIp;
+
+    if (isNative) {
+      const results = await Promise.all(batch);
+      foundIp = results.find((ip) => ip !== null);
+    } else {
+      const results = await Promise.allSettled(batch);
+      foundIp = results.find(
+        (r) => r.status === "fulfilled" && r.value !== null,
+      )?.value;
+    }
+
+    if (foundIp) {
+      console.log(
+        `¡Server found at IP: ${foundIp} (Platform: ${isNative ? "Native" : "Web"})!`,
       );
+      return foundIp;
     }
 
-    const results = await Promise.allSettled(batch);
-    const found = results.find(
-      (r) => r.status === "fulfilled" && r.value !== null,
-    );
-
-    if (found) {
-      console.log(`¡Server found at IP: ${found.value}!`);
-      return found.value;
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, isNative ? 50 : 100));
   }
 
+  console.log("Scan finished, server not found.");
   return null;
 };
 
