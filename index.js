@@ -18,6 +18,16 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const httpServer = createServer((req, res) => {
+  // Health check endpoint
+  if (req.url === "/health") {
+    res.writeHead(200, {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*",
+    });
+    res.end(JSON.stringify({ ip }));
+    return;
+  }
+
   let filePath = req.url === "/" ? "/index.html" : req.url;
   const fullPath = join(__dirname, "public", filePath);
   readFile(fullPath, (err, data) => {

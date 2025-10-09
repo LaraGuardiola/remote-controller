@@ -2,17 +2,102 @@ import { io } from "socket.io-client";
 import { Capacitor } from "@capacitor/core";
 import { LocalNotifications } from "@capacitor/local-notifications";
 
-const ip = prompt("Enter your IP digits:");
+// network variables
+let ip = null;
+let localAddress = null;
+let socket = null;
 
-let localAddress = `http://192.168.1.${ip}:3000`;
+// scan by batch, or you will DDOS yourself
+const scanNetwork = async () => {
+  console.log("Escaneando red...");
+  const batchSize = 10;
 
-const socket = io(localAddress, {
-  transports: ["polling", "websocket"],
-  timeout: 10000,
-  forceNew: true,
-  upgrade: true,
-  rememberUpgrade: false,
-});
+  for (let start = 1; start <= 254; start += batchSize) {
+    const batch = [];
+    const end = Math.min(start + batchSize - 1, 254);
+
+    for (let ipNum = start; ipNum <= end; ipNum++) {
+      batch.push(
+        fetch(`http://192.168.1.${ipNum}:3000/health`, {
+          signal: AbortSignal.timeout(800),
+        })
+          .then(() => ipNum)
+          .catch(() => null),
+      );
+    }
+
+    const results = await Promise.allSettled(batch);
+    const found = results.find(
+      (r) => r.status === "fulfilled" && r.value !== null,
+    );
+
+    if (found) {
+      console.log(`¡Server found at IP: ${found.value}!`);
+      return found.value;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+
+  return null;
+};
+
+const initConnection = async () => {
+  ip = (await scanNetwork()) || prompt("Enter your IP digits:");
+  localAddress = `http://192.168.1.${ip}:3000`;
+
+  socket = io(localAddress, {
+    transports: ["polling", "websocket"],
+    timeout: 10000,
+    forceNew: true,
+    upgrade: true,
+    rememberUpgrade: false,
+  });
+
+  // Socket connection events
+  socket.on("connect", async () => {
+    console.log(socket.id);
+
+    if (Capacitor.isNativePlatform()) {
+      try {
+        await LocalNotifications.schedule({
+          notifications: [
+            {
+              title: "Connection established",
+              body: `Connected to ${localAddress}`,
+              id: 1,
+            },
+          ],
+        });
+      } catch (error) {
+        console.error("Error with notifications:", error);
+      }
+    }
+
+    sendDimensions();
+  });
+
+  socket.on("disconnect", async () => {
+    console.log("Disconnected from server");
+
+    if (Capacitor.isNativePlatform()) {
+      try {
+        await LocalNotifications.schedule({
+          notifications: [
+            {
+              title: "Connection lost",
+              body: `Disconnected from ${localAddress}`,
+              id: 1,
+            },
+          ],
+        });
+      } catch (error) {
+        console.error("Error with notifications:", error);
+      }
+    }
+  });
+};
+
 const trackpad = document.querySelector(".trackpad");
 
 let startX = [];
@@ -33,8 +118,8 @@ let lastZoomTime = 0;
 let hasZoomed = false;
 let lastScrollTime = 0;
 let hasScrolled = false;
-const zoomThrottleDelay = 100;
-const scrollThrottleDelay = 80;
+const zoomThrottleDelay = 120;
+const scrollThrottleDelay = 100;
 let lastTwoFingerGestureTime = 0;
 const twoFingerGestureClickDelay = 200;
 let rightClickTriggered = false;
@@ -56,7 +141,7 @@ const getDistance = (touch1, touch2) => {
 const handleTwoFingerScroll = (e, currentTime) => {
   const finger1DeltaY = e.touches[0].clientY - trackpad.offsetTop - startY[0];
   const finger2DeltaY = e.touches[1].clientY - trackpad.offsetTop - startY[1];
-  const scrollThreshold = 15;
+  const scrollThreshold = 10;
 
   // Check if both fingers moved in the same direction with sufficient distance
   if (
@@ -90,6 +175,20 @@ const handleTwoFingerScroll = (e, currentTime) => {
       startY[1] = e.touches[1].clientY - trackpad.offsetTop;
     }
   }
+  // Check for scroll intent
+  else if (
+    Math.abs(finger1DeltaY) > 5 &&
+    Math.abs(finger2DeltaY) > 5 &&
+    currentTime - lastZoomTime > 150
+  ) {
+    // Both fingers moving in same direction indicates scroll intent
+    if (
+      (finger1DeltaY < 0 && finger2DeltaY < 0) ||
+      (finger1DeltaY > 0 && finger2DeltaY > 0)
+    ) {
+      hasScrolled = true; // Mark as scrolled to prevent clicks
+    }
+  }
 };
 
 // Handle zoom gesture with continuous zooming (only if not scrolling or dragging)
@@ -102,7 +201,7 @@ const handleTwoFingerZoom = (e, currentTime) => {
       const zoomDelay = 150; // Give scroll detection priority for 150ms
       if (currentTime - lastScrollTime > zoomDelay) {
         const distanceDiff = currentDistance - lastZoomDistance;
-        const zoomThreshold = 10;
+        const zoomThreshold = 5;
 
         if (Math.abs(distanceDiff) > zoomThreshold) {
           const zoomDirection = distanceDiff > 0 ? "in" : "out";
@@ -112,6 +211,9 @@ const handleTwoFingerZoom = (e, currentTime) => {
           lastZoomDistance = currentDistance;
           lastZoomTime = currentTime;
           hasZoomed = true;
+        } else if (Math.abs(distanceDiff) > 2) {
+          hasZoomed = true;
+          lastZoomDistance = currentDistance;
         }
       }
     }
@@ -288,6 +390,7 @@ const handleTwoFingerTouchEnd = (e) => {
   lastZoomDistance = 0;
   hasZoomed = false;
   hasScrolled = false;
+  hadTwoFingerActivity = false;
 };
 
 const startDragMode = () => {
@@ -407,6 +510,7 @@ trackpad.addEventListener("touchend", (e) => {
     e.touches.length === 0 &&
     !isTwoFingerGesture &&
     !rightClickTriggered &&
+    !hasZoomed &&
     Date.now() - lastTwoFingerGestureTime > twoFingerGestureClickDelay
   ) {
     handleTouchClick(e);
@@ -473,47 +577,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     input.focus();
     menuPanel.classList.remove("active");
   });
-});
 
-// Socket connection events
-socket.on("connect", async () => {
-  console.log(socket.id);
-
-  if (Capacitor.isNativePlatform()) {
-    try {
-      await LocalNotifications.schedule({
-        notifications: [
-          {
-            title: "Connection established",
-            body: `Connected to ${localAddress}`,
-            id: 1,
-          },
-        ],
-      });
-    } catch (error) {
-      console.error("Error with notifications:", error);
-    }
-  }
-
-  sendDimensions();
-});
-
-socket.on("disconnect", async () => {
-  console.log("Disconnected from server");
-
-  if (Capacitor.isNativePlatform()) {
-    try {
-      await LocalNotifications.schedule({
-        notifications: [
-          {
-            title: "Connection lost",
-            body: `Disconnected from ${localAddress}`,
-            id: 3,
-          },
-        ],
-      });
-    } catch (error) {
-      console.error("Error with notifications:", error);
-    }
-  }
+  // Inicializar conexión después de que todo esté listo
+  await initConnection();
 });
