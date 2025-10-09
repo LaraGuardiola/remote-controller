@@ -119,7 +119,7 @@ io.on("connection", (socket) => {
   socket.on("dragStart", () => {
     console.log("[DRAG EVENT] Dragging received");
     isDragging = true;
-    robot.mouseToggle("down", "left");
+    robot.mouseToggle(true, "left");
   });
 
   socket.on("drag", (deltaX, deltaY) => {
@@ -136,7 +136,7 @@ io.on("connection", (socket) => {
   socket.on("dragEnd", () => {
     console.log("[DRAG EVENT] End dragging");
     isDragging = false;
-    robot.mouseToggle("up", "left");
+    robot.mouseToggle(false, "left");
   });
 
   socket.on("zoom", (direction, magnitude) => {
