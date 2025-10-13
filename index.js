@@ -1,13 +1,15 @@
-import robot from "robotjs_addon";
+import robot from "@jitsi/robotjs";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import { readFile } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import {
+  displayRemoteControllerAscii,
   executeCommand,
   executeKeyboardShortcut,
   openRocketLeague,
+  openTaskManager,
   getIp,
 } from "./utils.js";
 
@@ -119,7 +121,7 @@ io.on("connection", (socket) => {
   socket.on("dragStart", () => {
     console.log("[DRAG EVENT] Dragging received");
     isDragging = true;
-    robot.mouseToggle(true, "left");
+    robot.mouseToggle("down", "left");
   });
 
   socket.on("drag", (deltaX, deltaY) => {
@@ -136,7 +138,7 @@ io.on("connection", (socket) => {
   socket.on("dragEnd", () => {
     console.log("[DRAG EVENT] End dragging");
     isDragging = false;
-    robot.mouseToggle(false, "left");
+    robot.mouseToggle("up", "left");
   });
 
   socket.on("zoom", (direction, magnitude) => {
@@ -153,7 +155,7 @@ io.on("connection", (socket) => {
     const scrollAmount = Math.max(1, Math.round(magnitude)) * 4;
     console.log(
       `[SCROLL EVENT] Scroll ${direction} received with magnitude:`,
-      scrollAmount,
+      scrollAmount
     );
 
     try {
@@ -233,10 +235,7 @@ io.on("connection", (socket) => {
           executeCommand("sleep");
           break;
         case "task-manager":
-          executeKeyboardShortcut("taskManager", "escape", [
-            "control",
-            "shift",
-          ]);
+          openTaskManager();
           break;
         case "copy":
           executeKeyboardShortcut("copy", "c");
@@ -261,5 +260,5 @@ io.on("connection", (socket) => {
 });
 
 httpServer.listen(port, () => {
-  console.log(`Remote controller listening on http://${ip}:${port}`);
+  displayRemoteControllerAscii();
 });

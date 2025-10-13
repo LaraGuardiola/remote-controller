@@ -116,16 +116,16 @@ export const handleTwoFingerZoom = (e, currentTime, socket) => {
 // Handle two-finger movement detection for right-click prevention
 export const handleTwoFingerMovement = (e) => {
   const deltaX1 = Math.abs(
-    e.touches[0].clientX - trackpad.offsetLeft - startX[0],
+    e.touches[0].clientX - trackpad.offsetLeft - startX[0]
   );
   const deltaY1 = Math.abs(
-    e.touches[0].clientY - trackpad.offsetTop - startY[0],
+    e.touches[0].clientY - trackpad.offsetTop - startY[0]
   );
   const deltaX2 = Math.abs(
-    e.touches[1].clientX - trackpad.offsetLeft - startX[1],
+    e.touches[1].clientX - trackpad.offsetLeft - startX[1]
   );
   const deltaY2 = Math.abs(
-    e.touches[1].clientY - trackpad.offsetTop - startY[1],
+    e.touches[1].clientY - trackpad.offsetTop - startY[1]
   );
 
   if (
@@ -192,7 +192,7 @@ export const createKeyboardInput = () => {
 };
 
 // Handle character input from virtual keyboard
-export const handleKeyboardInput = (event) => {
+export const handleKeyboardInput = (event, socket) => {
   const currentValue = event.target.value;
   if (currentValue.length > 0) {
     const lastChar = currentValue.slice(-1);
@@ -202,7 +202,7 @@ export const handleKeyboardInput = (event) => {
 };
 
 // Handle special keys (Backspace, Enter) from virtual keyboard
-export const handleKeyboardSpecialKeys = (event) => {
+export const handleKeyboardSpecialKeys = (event, socket) => {
   const { key } = event;
   if (key === "Backspace") {
     socket.emit("keyboard", { key: key.toLowerCase() });
@@ -213,9 +213,13 @@ export const handleKeyboardSpecialKeys = (event) => {
 };
 
 // Setup keyboard functionality
-export const setupKeyboard = (input) => {
-  input.addEventListener("input", handleKeyboardInput);
-  input.addEventListener("keydown", handleKeyboardSpecialKeys);
+export const setupKeyboard = (input, socket) => {
+  input.addEventListener("input", (event) =>
+    handleKeyboardInput(event, socket)
+  );
+  input.addEventListener("keydown", (event) =>
+    handleKeyboardSpecialKeys(event, socket)
+  );
 };
 
 export const handleTouchMove = (e, socket) => {
@@ -327,7 +331,9 @@ export const sendAction = (button, socket) => {
   if (action === "shutdown" || action === "sleep") {
     if (
       !confirm(
-        `¿Are you sure to ${action === "shutdown" ? "shutdown" : "sleep"} your PC?`,
+        `¿Are you sure to ${
+          action === "shutdown" ? "shutdown" : "sleep"
+        } your PC?`
       )
     ) {
       return;

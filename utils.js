@@ -1,7 +1,8 @@
 import { exec } from "child_process";
 import { systemCommands } from "./commands.js";
 import os from "os";
-import robot from "robotjs_addon";
+import fs from "fs";
+import robot from "@jitsi/robotjs";
 
 const platform = os.platform();
 
@@ -49,7 +50,7 @@ export const executeCommand = (commandKey) => {
 export const executeKeyboardShortcut = (
   commandKey,
   key,
-  modifier = "control",
+  modifier = "control"
 ) => {
   const config = systemCommands[commandKey];
   if (config && config[platform]) {
@@ -60,6 +61,15 @@ export const executeKeyboardShortcut = (
   }
 };
 
+export const openTaskManager = () => {
+  console.log("[UTILITIES] Opening Task Manager...");
+  exec("taskmgr.exe", (error) => {
+    if (error) {
+      console.error("[UTILITIES] Could not open Task Manager:", error);
+    }
+  });
+};
+
 export const openRocketLeague = () => {
   const rocketLeagueProcessName = "RocketLeague.exe";
   const rocketLeagueAppId = "252950";
@@ -67,13 +77,13 @@ export const openRocketLeague = () => {
   const launchCommand = `start steam://rungameid/${rocketLeagueAppId}`;
 
   console.log(
-    `[UTILITIES] Checking if ${rocketLeagueProcessName} is running...`,
+    `[UTILITIES] Checking if ${rocketLeagueProcessName} is running...`
   );
 
   exec(checkCommand, (error, stdout, stderr) => {
     if (error) {
       console.error(
-        `[UTILITIES] Error al ejecutar tasklist para comprobar el proceso: ${error.message}`,
+        `[UTILITIES] Error al ejecutar tasklist para comprobar el proceso: ${error.message}`
       );
       return;
     }
@@ -85,17 +95,23 @@ export const openRocketLeague = () => {
       console.log(`[UTILITIES]${rocketLeagueProcessName} is already running.`);
     } else {
       console.log(
-        `[UTILITIES] ${rocketLeagueProcessName} has not been launched. Launching via Steam...`,
+        `[UTILITIES] ${rocketLeagueProcessName} has not been launched. Launching via Steam...`
       );
 
       exec(launchCommand, (launchError, launchStdout, launchStderr) => {
         if (launchError) {
           console.error(
-            `[UTILITIES] Error executing launch command for Steam: ${launchError.message}`,
+            `[UTILITIES] Error executing launch command for Steam: ${launchError.message}`
           );
           return;
         }
       });
     }
   });
+};
+
+export const displayRemoteControllerAscii = () => {
+  setTimeout(() => {
+    console.log(fs.readFileSync("./assets/ascii-text-art.txt", "utf8") + "\n");
+  }, 500);
 };

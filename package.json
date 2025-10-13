@@ -4,12 +4,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "concurrently \"pnpm run backend\" \"pnpm run frontend\"",
-    "backend": "node index.js",
+    "dev": "concurrently \"bun run backend\" \"bun run frontend\"",
+    "backend": "bun index.js",
     "frontend": "vite --host",
     "build": "vite build",
     "preview": "vite preview",
-    "start": "node index.js"
+    "start": "bun index.js"
   },
   "keywords": [],
   "author": "Sergio Lara Guardiola",
@@ -20,6 +20,7 @@
     "@capacitor/cli": "^7.4.3",
     "@capacitor/core": "^7.4.3",
     "@capacitor/local-notifications": "^7.0.3",
+    "@jitsi/robotjs": "^0.6.18",
     "robotjs_addon": "^0.6.5",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1"
@@ -27,13 +28,14 @@
   "pnpm": {
     "onlyBuiltDependencies": [
       "robotjs",
-      "robotjs_addon"
+      "robotjs_addon",
+      "@jitsi/robotjs"
     ]
   },
   "type": "module",
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",
     "concurrently": "^9.2.1",
-    "vite": "^7.1.9"
+    "vite": "^6.0.5"
   }
 }

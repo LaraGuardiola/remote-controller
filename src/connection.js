@@ -111,11 +111,6 @@ export const initConnection = async () => {
         }
       }
 
-      socket.emit("dimensions", {
-        width: trackpad.clientWidth,
-        height: trackpad.clientHeight,
-      });
-
       resolve(socket);
     });
 

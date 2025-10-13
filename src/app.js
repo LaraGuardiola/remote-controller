@@ -33,8 +33,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     // Create new keyboard input
-    const input = createKeyboardInput();
-    setupKeyboard(input);
+    const input = EVENTS.createKeyboardInput();
+    EVENTS.setupKeyboard(input, socket);
     input.focus();
     menuPanel.classList.remove("active");
   });
