@@ -44,8 +44,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   window.addEventListener("orientationchange", EVENTS.sendDimensions(socket));
 
   window.addEventListener("resize", () => {
-    document.querySelector(".container").style.height =
-      `${window.innerHeight}px`;
+    document.querySelector(
+      ".container"
+    ).style.height = `${window.innerHeight}px`;
   });
 
   trackpad.addEventListener("touchstart", (e) => {

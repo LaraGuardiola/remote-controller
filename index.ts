@@ -1,6 +1,6 @@
 import robot from "@jitsi/robotjs";
-import { createServer } from "http";
-import { Server } from "socket.io";
+import { createServer, IncomingMessage, ServerResponse } from "http";
+import { Server as SocketIOServer } from "socket.io";
 import { readFile } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
@@ -9,17 +9,21 @@ import {
   executeCommand,
   executeKeyboardShortcut,
   openRocketLeague,
-  openTaskManager,
   getIp,
-} from "./utils.js";
+} from "./utils";
 
-const port = 3000;
-const ip = getIp();
+const port: number = 3000;
+const ip: string = getIp();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const httpServer = createServer((req, res) => {
+type Dimensions = {
+  width: number;
+  height: number;
+};
+
+const httpServer = createServer((req: IncomingMessage, res: ServerResponse) => {
   // Health check endpoint
   if (req.url === "/health") {
     res.writeHead(200, {
@@ -30,14 +34,14 @@ const httpServer = createServer((req, res) => {
     return;
   }
 
-  let filePath = req.url === "/" ? "/index.html" : req.url;
-  const fullPath = join(__dirname, "public", filePath);
-  readFile(fullPath, (err, data) => {
+  const filePath: string = req.url ?? "/";
+  const fullPath: string = join(__dirname, "public", filePath);
+  readFile(fullPath, (err: NodeJS.ErrnoException | null, data: Buffer) => {
     if (err) {
       res.writeHead(404);
       res.end("Not found");
     } else {
-      let contentType = "text/plain";
+      let contentType: string = "text/plain";
       if (filePath.endsWith(".html")) contentType = "text/html";
       if (filePath.endsWith(".css")) contentType = "text/css";
       if (filePath.endsWith(".js")) contentType = "application/javascript";
@@ -48,9 +52,7 @@ const httpServer = createServer((req, res) => {
   });
 });
 
-// const httpServer = createServer(app);
-
-const io = new Server(httpServer, {
+const io = new SocketIOServer(httpServer, {
   cors: {
     origin: "*", // for testing purposes
   },
@@ -59,13 +61,13 @@ const io = new Server(httpServer, {
   pingInterval: 25000,
 });
 
-const deviceDimensions = new Map();
-let pendingDeltaX = 0;
-let pendingDeltaY = 0;
-let processingQueue = false;
-let isDragging = false;
+const deviceDimensions = new Map<string, Dimensions>();
+let pendingDeltaX: number = 0;
+let pendingDeltaY: number = 0;
+let processingQueue: boolean = false;
+let isDragging: boolean = false;
 
-const processMouseQueue = () => {
+const processMouseQueue = (): void => {
   if (pendingDeltaX === 0 && pendingDeltaY === 0) {
     processingQueue = false;
     return;
@@ -86,18 +88,20 @@ const processMouseQueue = () => {
   pendingDeltaX = 0;
   pendingDeltaY = 0;
 
-  setTimeout(processMouseQueue, 8);
+  //testing 60fps and more
+  processMouseQueue();
+  // setTimeout(processMouseQueue, 0);
 };
 
 io.on("connection", (socket) => {
   console.log("[CLIENT] Client connected:", socket.id);
 
-  socket.on("dimensions", (data) => {
+  socket.on("dimensions", (data: Dimensions) => {
     console.log("[CLIENT] Device dimensions:", data);
     deviceDimensions.set(socket.id, data);
   });
 
-  socket.on("movement", (deltaX, deltaY) => {
+  socket.on("movement", (deltaX: number, deltaY: number) => {
     console.log("[MOUSE EVENT] Movement received:", deltaX, deltaY);
 
     pendingDeltaX += deltaX;
@@ -109,7 +113,7 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("click", (button) => {
+  socket.on("click", (button: string) => {
     console.log(`[CLICK EVENT] Click ${button} received`);
     if (button === "right") {
       robot.mouseClick("right");
@@ -124,7 +128,7 @@ io.on("connection", (socket) => {
     robot.mouseToggle("down", "left");
   });
 
-  socket.on("drag", (deltaX, deltaY) => {
+  socket.on("drag", (deltaX: number, deltaY: number) => {
     console.log("[DRAG EVENT] Dragging:", deltaX, deltaY);
     pendingDeltaX += deltaX;
     pendingDeltaY += deltaY;
@@ -141,7 +145,7 @@ io.on("connection", (socket) => {
     robot.mouseToggle("up", "left");
   });
 
-  socket.on("zoom", (direction, magnitude) => {
+  socket.on("zoom", (direction: string, magnitude: number) => {
     console.log(`[ZOOM EVENT] Zoom ${direction} received`);
 
     if (direction === "in") {
@@ -151,7 +155,7 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("scroll", (direction, magnitude) => {
+  socket.on("scroll", (direction: string, magnitude: number) => {
     const scrollAmount = Math.max(1, Math.round(magnitude)) * 4;
     console.log(
       `[SCROLL EVENT] Scroll ${direction} received with magnitude:`,
@@ -177,7 +181,7 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("keyboard", (data) => {
+  socket.on("keyboard", (data: { key: string }) => {
     const { key } = data;
     try {
       switch (key) {
@@ -204,7 +208,7 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("media", (command) => {
+  socket.on("media", (command: string) => {
     try {
       switch (command) {
         case "shutdown":
@@ -235,7 +239,7 @@ io.on("connection", (socket) => {
           executeCommand("sleep");
           break;
         case "task-manager":
-          openTaskManager();
+          executeCommand("taskManager");
           break;
         case "copy":
           executeKeyboardShortcut("copy", "c");

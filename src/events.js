@@ -316,7 +316,7 @@ export const throttle = (callback, delay) => {
   };
 };
 
-export const throttledMove = throttle(handleTouchMove, 32);
+export const throttledMove = throttle(handleTouchMove, 16);
 
 export const sendDimensions = (socket) => {
   socket.emit("dimensions", {
