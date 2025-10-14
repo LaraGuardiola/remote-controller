@@ -1,108 +1,79 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <link rel="stylesheet" href="style.css" />
-        <title>Document</title>
-        <script type="module" src="app.js"></script>
-        <meta name="theme-color" content="#4285f4" />
-        <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="mobile-web-app-status-bar-style" content="black" />
-        <meta name="mobile-web-app-title" content="Remote Control" />
-        <link rel="touch-icon" href="icons/remote-control-icon.svg" />
-    </head>
-    <body>
-        <div class="container">
-            <div class="header">
-                <h1>Remote Control</h1>
-                <button class="menu-toggle" id="menuToggle">Menu</button>
-            </div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="style.css" />
+    <title>Document</title>
+    <script type="module" src="app.ts"></script>
+    <meta name="theme-color" content="#4285f4" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-status-bar-style" content="black" />
+    <meta name="mobile-web-app-title" content="Remote Control" />
+    <link rel="touch-icon" href="icons/remote-control-icon.svg" />
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>Remote Control</h1>
+        <button class="menu-toggle" id="menuToggle">Menu</button>
+      </div>
 
-            <div class="menu-panel" id="menuPanel">
-                <div class="section">
-                    <div class="section-title">Media</div>
-                    <div class="button-grid">
-                        <button class="action-button" data-action="next-track">
-                            Next
-                        </button>
-                        <button class="action-button" data-action="play-pause">
-                            Play/Pause
-                        </button>
-                        <button class="action-button" data-action="volume-up">
-                            Volume +
-                        </button>
-                        <button class="action-button" data-action="prev-track">
-                            Previous
-                        </button>
-                        <button class="action-button" data-action="mute">
-                            Mute
-                        </button>
-                        <button class="action-button" data-action="volume-down">
-                            Volume -
-                        </button>
-                    </div>
-                </div>
-
-                <div class="section">
-                    <div class="section-title">System</div>
-                    <div class="button-grid">
-                        <button class="action-button" data-action="lock">
-                            Lock
-                        </button>
-                        <button class="action-button red" data-action="sleep">
-                            Sleep
-                        </button>
-                        <button
-                            class="action-button red"
-                            data-action="shutdown"
-                        >
-                            Shutdown
-                        </button>
-                    </div>
-                </div>
-
-                <div class="section">
-                    <div class="section-title">Utilities</div>
-                    <div class="button-grid">
-                        <button class="action-button" data-action="copy">
-                            Copy
-                        </button>
-                        <button class="action-button" data-action="undo">
-                            Undo
-                        </button>
-                        <button
-                            class="action-button green"
-                            data-action="task-manager"
-                        >
-                            Task mgr
-                        </button>
-                        <button class="action-button" data-action="paste">
-                            Paste
-                        </button>
-                        <button class="action-button" data-action="redo">
-                            Redo
-                        </button>
-                        <button
-                            class="action-button rl"
-                            data-action="rocket-league"
-                        >
-                            <img
-                                src="icons/rocket-league.svg"
-                                alt=""
-                                srcset=""
-                            />
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="trackpad" id="trackpad">
-                <div class="trackpad-label">TRACKPAD</div>
-            </div>
-            <button class="circle">
-                <img src="icons/keyboard-solid-full.svg" alt="" srcset="" />
+      <div class="menu-panel" id="menuPanel">
+        <div class="section">
+          <div class="section-title">Media</div>
+          <div class="button-grid">
+            <button class="action-button" data-action="next-track">Next</button>
+            <button class="action-button" data-action="play-pause">
+              Play/Pause
             </button>
+            <button class="action-button" data-action="volume-up">
+              Volume +
+            </button>
+            <button class="action-button" data-action="prev-track">
+              Previous
+            </button>
+            <button class="action-button" data-action="mute">Mute</button>
+            <button class="action-button" data-action="volume-down">
+              Volume -
+            </button>
+          </div>
         </div>
-    </body>
+
+        <div class="section">
+          <div class="section-title">System</div>
+          <div class="button-grid">
+            <button class="action-button" data-action="lock">Lock</button>
+            <button class="action-button red" data-action="sleep">Sleep</button>
+            <button class="action-button red" data-action="shutdown">
+              Shutdown
+            </button>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Utilities</div>
+          <div class="button-grid">
+            <button class="action-button" data-action="copy">Copy</button>
+            <button class="action-button" data-action="undo">Undo</button>
+            <button class="action-button green" data-action="task-manager">
+              Task mgr
+            </button>
+            <button class="action-button" data-action="paste">Paste</button>
+            <button class="action-button" data-action="redo">Redo</button>
+            <button class="action-button rl" data-action="rocket-league">
+              <img src="icons/rocket-league.svg" alt="" srcset="" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="trackpad" id="trackpad">
+        <div class="trackpad-label">TRACKPAD</div>
+      </div>
+      <button class="circle">
+        <img src="icons/keyboard-solid-full.svg" alt="" srcset="" />
+      </button>
+    </div>
+  </body>
 </html>
