@@ -72,3 +72,6 @@ temp/
 
 # Vite
 .vite/
+
+# Other
+*.exe

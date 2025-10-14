@@ -2,7 +2,7 @@
   "name": "remote-controller",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "index.ts",
   "scripts": {
     "dev": "concurrently \"bun run backend\" \"bun run frontend\"",
     "backend": "bun index.ts",
@@ -20,9 +20,10 @@
     "@capacitor/core": "^7.4.3",
     "@capacitor/local-notifications": "^7.0.3",
     "@jitsi/robotjs": "^0.6.18",
-    "robotjs_addon": "^0.6.5",
     "socket.io": "^4.8.1",
-    "socket.io-client": "^4.8.1"
+    "socket.io-client": "^4.8.1",
+    "systray2": "^2.1.4",
+    "trayballoon": "^2.0.0"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

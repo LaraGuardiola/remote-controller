@@ -1,10 +1,11 @@
 import os from "os";
 import robot from "@jitsi/robotjs";
+import COMMANDS from "./commands.json";
+import asciiArt from "./assets/ascii-text-art.txt";
+import { appendFile } from "node:fs/promises";
+import fs from "node:fs";
 
 const platform = os.platform();
-const commands = "./commands.json";
-const file = Bun.file(commands);
-const COMMANDS = await file.json();
 
 export const getIp = (): string => {
   const interfaces = os.networkInterfaces();
@@ -98,7 +99,14 @@ export const openRocketLeague = async (): Promise<void> => {
 
 export const displayRemoteControllerAscii = (): void => {
   setTimeout(async () => {
-    let path = "./assets/ascii-text-art.txt";
-    console.log((await Bun.file(path).text()) + "\n");
+    console.log(asciiArt + "\n");
   }, 500);
+};
+
+export const log = async (msg: string) => {
+  const line = `[${new Date().toISOString()}] ${msg}\n`;
+  try {
+    if (!fs.existsSync("./logs")) fs.mkdirSync("./logs");
+    await appendFile("./logs/event.log", line, "utf8");
+  } catch {}
 };

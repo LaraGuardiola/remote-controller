@@ -23,6 +23,7 @@ const scrollThrottleDelay = 100;
 let lastTwoFingerGestureTime = 0;
 const twoFingerGestureClickDelay = 200;
 let rightClickTriggered = false;
+let throttleMs = 32;
 
 export const getDistance = (touch1, touch2) => {
   const dx = touch1.clientX - touch2.clientX;
@@ -316,7 +317,7 @@ export const throttle = (callback, delay) => {
   };
 };
 
-export const throttledMove = throttle(handleTouchMove, 16);
+export const throttledMove = throttle(handleTouchMove, throttleMs);
 
 export const sendDimensions = (socket) => {
   socket.emit("dimensions", {

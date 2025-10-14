@@ -4,15 +4,18 @@ import { Server as SocketIOServer } from "socket.io";
 import { readFile } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
+import trayballoon from "trayballoon";
 import {
   displayRemoteControllerAscii,
   executeCommand,
   executeKeyboardShortcut,
   openRocketLeague,
   getIp,
+  log,
 } from "./utils";
 
 const port: number = 3000;
+const frontPort: number = 5173;
 const ip: string = getIp();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -22,6 +25,12 @@ type Dimensions = {
   width: number;
   height: number;
 };
+
+await trayballoon({
+  text: `Launch at ${ip}:${frontPort}`,
+  icon: "./assets/icon.ico",
+  title: "Remote Controller",
+});
 
 const httpServer = createServer((req: IncomingMessage, res: ServerResponse) => {
   // Health check endpoint

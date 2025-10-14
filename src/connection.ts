@@ -1,13 +1,12 @@
-import { io } from "socket.io-client";
+import { io, Socket } from "socket.io-client";
 import { Capacitor, CapacitorHttp } from "@capacitor/core";
 import { LocalNotifications } from "@capacitor/local-notifications";
 
-let socket = null;
-let ip = null;
-let localAddress = null;
+let socket: Socket | null = null;
+let ip: string | null = null;
+let localAddress: string | null = null;
 
-// scan by batch, or you will DDOS yourself
-const scanNetwork = async () => {
+const scanNetwork = async (): Promise<string | null> => {
   const subnetsToScan = ["192.168.1.", "192.168.0."];
 
   for (const baseSubnet of subnetsToScan) {
@@ -18,7 +17,7 @@ const scanNetwork = async () => {
     const isNative = Capacitor.isNativePlatform();
 
     for (let start = 1; start <= 254; start += batchSize) {
-      const batch = [];
+      const batch: Promise<number | null>[] = [];
       const end = Math.min(start + batchSize - 1, 254);
 
       for (let ipNum = start; ipNum <= end; ipNum++) {
@@ -27,7 +26,7 @@ const scanNetwork = async () => {
         if (isNative) {
           const promise = CapacitorHttp.request({
             method: "GET",
-            url: url,
+            url,
             connectTimeout: requestTimeout,
             readTimeout: requestTimeout,
           })
@@ -37,7 +36,7 @@ const scanNetwork = async () => {
           batch.push(promise);
         } else {
           const promise = fetch(url, {
-            signal: AbortSignal.timeout(800),
+            signal: AbortSignal.timeout(requestTimeout),
           })
             .then(() => ipNum)
             .catch(() => null);
@@ -46,22 +45,26 @@ const scanNetwork = async () => {
         }
       }
 
-      let foundIp;
+      let foundIp: number | null = null;
 
       if (isNative) {
         const results = await Promise.all(batch);
-        foundIp = results.find((ip) => ip !== null);
+        foundIp = results.find((ip) => ip !== null) ?? null;
       } else {
         const results = await Promise.allSettled(batch);
-        foundIp = results.find(
-          (r) => r.status === "fulfilled" && r.value !== null,
-        )?.value;
+        const fulfilled = results.find(
+          (r): r is PromiseFulfilledResult<number> =>
+            r.status === "fulfilled" && r.value !== null
+        );
+        foundIp = fulfilled?.value ?? null;
       }
 
       if (foundIp) {
         const fullIp = `${baseSubnet}${foundIp}`;
         console.log(
-          `¡Server found at IP: ${fullIp} (Platform: ${isNative ? "Native" : "Web"})!`,
+          `¡Server found at IP: ${fullIp} (Platform: ${
+            isNative ? "Native" : "Web"
+          })!`
         );
 
         return fullIp;
@@ -71,7 +74,7 @@ const scanNetwork = async () => {
     }
 
     console.log(
-      `Subnet ${baseSubnet} scan finished, moving to the next one...`,
+      `Subnet ${baseSubnet} scan finished, moving to the next one...`
     );
   }
 
@@ -79,8 +82,11 @@ const scanNetwork = async () => {
   return null;
 };
 
-export const initConnection = async () => {
+export const initConnection = async (): Promise<Socket | null> => {
   ip = (await scanNetwork()) || prompt("Enter your local IPv4:");
+  if (!ip) {
+    return null;
+  }
   localAddress = `http://${ip}:3000`;
 
   socket = io(localAddress, {
@@ -91,9 +97,9 @@ export const initConnection = async () => {
     rememberUpgrade: false,
   });
 
-  return new Promise((resolve) => {
-    socket.on("connect", async () => {
-      console.log(socket.id);
+  return new Promise<Socket | null>((resolve) => {
+    socket?.on("connect", async () => {
+      console.log(socket?.id);
 
       if (Capacitor.isNativePlatform()) {
         try {
@@ -111,11 +117,10 @@ export const initConnection = async () => {
         }
       }
 
-      resolve(socket);
+      resolve(socket as Socket);
     });
 
-    // Manejador de DESCONEXIÓN (sin cambios)
-    socket.on("disconnect", async () => {
+    socket?.on("disconnect", async () => {
       console.log("Disconnected from server");
 
       if (Capacitor.isNativePlatform()) {
@@ -135,13 +140,13 @@ export const initConnection = async () => {
       }
     });
 
-    socket.on("connect_error", (err) => {
+    socket?.on("connect_error", (err: any) => {
       console.error("Socket initial connection error:", err);
       resolve(null);
     });
 
     setTimeout(() => {
-      if (!socket.connected) {
+      if (!socket?.connected) {
         console.log("Socket connection timeout reached.");
         resolve(null);
       }
