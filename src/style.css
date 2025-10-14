@@ -16,7 +16,7 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: "Courier New", monospace;
+    font-family: monospace;
     user-select: none;
 }
 
@@ -32,11 +32,12 @@ body {
 .container {
     max-width: 100%;
     width: 100%;
-    margin: 0 auto;
     padding: 10px;
     height: 100%;
     display: flex;
     flex-direction: column;
+    margin-top: env(safe-area-inset-top);
+    margin-bottom: env(safe-area-inset-bottom);
 }
 
 .header {
@@ -263,8 +264,8 @@ body {
 }
 
 .circle {
-    position: fixed;
-    bottom: 20px;
+    position: absolute;
+    bottom: 70px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
@@ -279,11 +280,22 @@ body {
     font-size: 22px;
     cursor: pointer;
     padding: 0;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.circle:focus {
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .circle:active {
-    bottom: 18px;
+    bottom: 68px;
     -webkit-tap-highlight-color: transparent;
+}
+
+.circle img {
+    width: 30px;
+    height: 30px;
 }
 
 @media (max-height: 600px) {
@@ -300,7 +312,6 @@ body {
 @media (max-height: 480px) {
     .action-button {
         height: 32px;
-        font-size: 11px;
     }
 
     .button-grid {
@@ -309,7 +320,6 @@ body {
     }
 
     .section-title {
-        font-size: 12px;
         padding: 4px 10px;
     }
 
@@ -321,7 +331,6 @@ body {
 @media (max-height: 400px) {
     .action-button {
         height: 28px;
-        font-size: 10px;
     }
 
     .button-grid {
@@ -358,5 +367,6 @@ body {
     }
     .trackpad-label {
         height: 0;
+        margin-bottom: 6em;
     }
 }

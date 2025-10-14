@@ -1,6 +1,3 @@
-import { io } from "https://cdn.socket.io/4.8.1/socket.io.esm.min.js";
-
-const socket = io();
 const trackpad = document.querySelector(".trackpad");
 
 let startX = [];
@@ -21,33 +18,31 @@ let lastZoomTime = 0;
 let hasZoomed = false;
 let lastScrollTime = 0;
 let hasScrolled = false;
-const zoomThrottleDelay = 100;
-const scrollThrottleDelay = 80;
+const zoomThrottleDelay = 120;
+const scrollThrottleDelay = 100;
+let lastTwoFingerGestureTime = 0;
+const twoFingerGestureClickDelay = 200;
+let rightClickTriggered = false;
+let throttleMs = 32;
 
-const sendDimensions = () => {
-  socket.emit("dimensions", {
-    width: trackpad.clientWidth,
-    height: trackpad.clientHeight,
-  });
-};
-
-const getDistance = (touch1, touch2) => {
+export const getDistance = (touch1, touch2) => {
   const dx = touch1.clientX - touch2.clientX;
   const dy = touch1.clientY - touch2.clientY;
   return Math.sqrt(dx * dx + dy * dy);
 };
 
 // Handle two-finger scrolling - check if both fingers move in same direction
-const handleTwoFingerScroll = (e, currentTime) => {
+export const handleTwoFingerScroll = (e, currentTime, socket) => {
   const finger1DeltaY = e.touches[0].clientY - trackpad.offsetTop - startY[0];
   const finger2DeltaY = e.touches[1].clientY - trackpad.offsetTop - startY[1];
-  const scrollThreshold = 15;
+  const scrollThreshold = 10;
 
   // Check if both fingers moved in the same direction with sufficient distance
   if (
     Math.abs(finger1DeltaY) > scrollThreshold &&
     Math.abs(finger2DeltaY) > scrollThreshold &&
-    currentTime - lastScrollTime > scrollThrottleDelay
+    currentTime - lastScrollTime > scrollThrottleDelay &&
+    currentTime - lastZoomTime > 150
   ) {
     // Both fingers moving up (negative Y)
     if (finger1DeltaY < 0 && finger2DeltaY < 0) {
@@ -74,10 +69,24 @@ const handleTwoFingerScroll = (e, currentTime) => {
       startY[1] = e.touches[1].clientY - trackpad.offsetTop;
     }
   }
+  // Check for scroll intent
+  else if (
+    Math.abs(finger1DeltaY) > 5 &&
+    Math.abs(finger2DeltaY) > 5 &&
+    currentTime - lastZoomTime > 150
+  ) {
+    // Both fingers moving in same direction indicates scroll intent
+    if (
+      (finger1DeltaY < 0 && finger2DeltaY < 0) ||
+      (finger1DeltaY > 0 && finger2DeltaY > 0)
+    ) {
+      hasScrolled = true; // Mark as scrolled to prevent clicks
+    }
+  }
 };
 
 // Handle zoom gesture with continuous zooming (only if not scrolling or dragging)
-const handleTwoFingerZoom = (e, currentTime) => {
+export const handleTwoFingerZoom = (e, currentTime, socket) => {
   if (!hasScrolled && !isDragging) {
     const currentDistance = getDistance(e.touches[0], e.touches[1]);
 
@@ -86,7 +95,7 @@ const handleTwoFingerZoom = (e, currentTime) => {
       const zoomDelay = 150; // Give scroll detection priority for 150ms
       if (currentTime - lastScrollTime > zoomDelay) {
         const distanceDiff = currentDistance - lastZoomDistance;
-        const zoomThreshold = 10;
+        const zoomThreshold = 5;
 
         if (Math.abs(distanceDiff) > zoomThreshold) {
           const zoomDirection = distanceDiff > 0 ? "in" : "out";
@@ -96,6 +105,9 @@ const handleTwoFingerZoom = (e, currentTime) => {
           lastZoomDistance = currentDistance;
           lastZoomTime = currentTime;
           hasZoomed = true;
+        } else if (Math.abs(distanceDiff) > 2) {
+          hasZoomed = true;
+          lastZoomDistance = currentDistance;
         }
       }
     }
@@ -103,18 +115,18 @@ const handleTwoFingerZoom = (e, currentTime) => {
 };
 
 // Handle two-finger movement detection for right-click prevention
-const handleTwoFingerMovement = (e) => {
+export const handleTwoFingerMovement = (e) => {
   const deltaX1 = Math.abs(
-    e.touches[0].clientX - trackpad.offsetLeft - startX[0],
+    e.touches[0].clientX - trackpad.offsetLeft - startX[0]
   );
   const deltaY1 = Math.abs(
-    e.touches[0].clientY - trackpad.offsetTop - startY[0],
+    e.touches[0].clientY - trackpad.offsetTop - startY[0]
   );
   const deltaX2 = Math.abs(
-    e.touches[1].clientX - trackpad.offsetLeft - startX[1],
+    e.touches[1].clientX - trackpad.offsetLeft - startX[1]
   );
   const deltaY2 = Math.abs(
-    e.touches[1].clientY - trackpad.offsetTop - startY[1],
+    e.touches[1].clientY - trackpad.offsetTop - startY[1]
   );
 
   if (
@@ -128,7 +140,7 @@ const handleTwoFingerMovement = (e) => {
 };
 
 // Handle single finger movement for mouse cursor
-const handleSingleFingerMovement = (e) => {
+export const handleSingleFingerMovement = (e, socket) => {
   const touch = e.touches[0];
   const currentX = touch.clientX - trackpad.offsetLeft;
   const currentY = touch.clientY - trackpad.offsetTop;
@@ -167,7 +179,7 @@ const handleSingleFingerMovement = (e) => {
 };
 
 // Create and setup the virtual keyboard input element
-const createKeyboardInput = () => {
+export const createKeyboardInput = () => {
   let input = document.createElement("input");
   input.className = "keyboard-input";
   input.type = "text";
@@ -181,7 +193,7 @@ const createKeyboardInput = () => {
 };
 
 // Handle character input from virtual keyboard
-const handleKeyboardInput = (event) => {
+export const handleKeyboardInput = (event, socket) => {
   const currentValue = event.target.value;
   if (currentValue.length > 0) {
     const lastChar = currentValue.slice(-1);
@@ -191,7 +203,7 @@ const handleKeyboardInput = (event) => {
 };
 
 // Handle special keys (Backspace, Enter) from virtual keyboard
-const handleKeyboardSpecialKeys = (event) => {
+export const handleKeyboardSpecialKeys = (event, socket) => {
   const { key } = event;
   if (key === "Backspace") {
     socket.emit("keyboard", { key: key.toLowerCase() });
@@ -202,17 +214,16 @@ const handleKeyboardSpecialKeys = (event) => {
 };
 
 // Setup keyboard functionality
-const setupKeyboard = (input) => {
-  input.addEventListener("input", handleKeyboardInput);
-  input.addEventListener("keydown", handleKeyboardSpecialKeys);
+export const setupKeyboard = (input, socket) => {
+  input.addEventListener("input", (event) =>
+    handleKeyboardInput(event, socket)
+  );
+  input.addEventListener("keydown", (event) =>
+    handleKeyboardSpecialKeys(event, socket)
+  );
 };
 
-socket.on("connect", () => {
-  console.log(socket.id);
-  sendDimensions();
-});
-
-const handleTouchMove = (e) => {
+export const handleTouchMove = (e, socket) => {
   // Handle multiple finger gestures
   if (e.touches.length > 1) {
     isTwoFingerGesture = true;
@@ -226,10 +237,10 @@ const handleTouchMove = (e) => {
       const currentTime = Date.now();
 
       // Handle two-finger scrolling
-      handleTwoFingerScroll(e, currentTime);
+      handleTwoFingerScroll(e, currentTime, socket);
 
       // Handle zoom gesture (only if not scrolling)
-      handleTwoFingerZoom(e, currentTime);
+      handleTwoFingerZoom(e, currentTime, socket);
 
       // Handle movement detection for right-click prevention
       handleTwoFingerMovement(e);
@@ -247,14 +258,14 @@ const handleTouchMove = (e) => {
   }
 
   // Handle single finger movement
-  handleSingleFingerMovement(e);
+  handleSingleFingerMovement(e, socket);
 };
 
-const handleTouchClick = (e) => {
+export const handleTouchClick = (e, socket) => {
   socket.emit("click", "left");
 };
 
-const handleTwoFingerTouchEnd = (e) => {
+export const handleTwoFingerTouchEnd = (e, socket) => {
   if (
     twoFingerTouchStart &&
     e.touches.length === 0 &&
@@ -263,6 +274,7 @@ const handleTwoFingerTouchEnd = (e) => {
     !hasScrolled
   ) {
     socket.emit("click", "right");
+    rightClickTriggered = true;
   }
 
   // Send scrollEnd event to stop any pending scroll operations
@@ -276,9 +288,10 @@ const handleTwoFingerTouchEnd = (e) => {
   lastZoomDistance = 0;
   hasZoomed = false;
   hasScrolled = false;
+  hadTwoFingerActivity = false;
 };
 
-const startDragMode = () => {
+export const startDragMode = (socket) => {
   isDragging = true;
   if ("vibrate" in navigator) {
     navigator.vibrate(100);
@@ -286,14 +299,14 @@ const startDragMode = () => {
   socket.emit("dragStart");
 };
 
-const endDragMode = () => {
+export const endDragMode = (socket) => {
   if (isDragging) {
     socket.emit("dragEnd");
     isDragging = false;
   }
 };
 
-const throttle = (callback, delay) => {
+export const throttle = (callback, delay) => {
   let lastCall = 0;
   return function (...args) {
     const now = Date.now();
@@ -304,40 +317,41 @@ const throttle = (callback, delay) => {
   };
 };
 
-const throttledMove = throttle(handleTouchMove, 32);
+export const throttledMove = throttle(handleTouchMove, throttleMs);
 
-document.querySelectorAll(".action-button").forEach((button) => {
-  button.addEventListener("click", function () {
-    const action = this.getAttribute("data-action");
-
-    if (action === "shutdown" || action === "sleep") {
-      if (
-        !confirm(
-          `¿Are you sure to ${action === "shutdown" ? "shutdown" : "sleep"} your PC?`,
-        )
-      ) {
-        return;
-      }
-    }
-
-    socket.emit("media", action);
-
-    this.classList.add("active");
-    setTimeout(() => {
-      this.classList.remove("active");
-    }, 200);
+export const sendDimensions = (socket) => {
+  socket.emit("dimensions", {
+    width: trackpad.clientWidth,
+    height: trackpad.clientHeight,
   });
-});
+};
 
-trackpad.addEventListener("touchmove", (e) => {
+export const sendAction = (button, socket) => {
+  const action = button.getAttribute("data-action");
+
+  if (action === "shutdown" || action === "sleep") {
+    if (
+      !confirm(
+        `¿Are you sure to ${
+          action === "shutdown" ? "shutdown" : "sleep"
+        } your PC?`
+      )
+    ) {
+      return;
+    }
+  }
+
+  socket.emit("media", action);
+
+  button.classList.add("active");
+  setTimeout(() => {
+    button.classList.remove("active");
+  }, 200);
+};
+
+export const handleTouchStart = (e, socket) => {
   e.preventDefault();
-  throttledMove(e);
-});
 
-trackpad.addEventListener("touchstart", (e) => {
-  e.preventDefault();
-
-  // otherwise the keyboard input will be focused
   const keyboardInput = document.querySelector(".keyboard-input");
   if (keyboardInput && document.activeElement === keyboardInput) {
     keyboardInput.blur();
@@ -373,15 +387,15 @@ trackpad.addEventListener("touchstart", (e) => {
     if (!isTwoFingerGesture) {
       longPressTimer = setTimeout(() => {
         if (!moved) {
-          startDragMode();
+          startDragMode(socket);
         }
         longPressTimer = null;
       }, longPressDuration);
     }
   }
-});
+};
 
-trackpad.addEventListener("touchend", (e) => {
+export const handleTouchEnd = (e, socket) => {
   e.preventDefault();
 
   if (longPressTimer) {
@@ -393,13 +407,17 @@ trackpad.addEventListener("touchend", (e) => {
     !moved &&
     clickPossible &&
     e.touches.length === 0 &&
-    !isTwoFingerGesture
+    !isTwoFingerGesture &&
+    !rightClickTriggered &&
+    !hasZoomed &&
+    Date.now() - lastTwoFingerGestureTime > twoFingerGestureClickDelay
   ) {
-    handleTouchClick(e);
+    handleTouchClick(e, socket);
   }
 
   if (twoFingerTouchStart && e.touches.length === 0) {
-    handleTwoFingerTouchEnd(e);
+    handleTwoFingerTouchEnd(e, socket);
+    lastTwoFingerGestureTime = Date.now();
   }
 
   if (e.touches.length === 0) {
@@ -408,45 +426,16 @@ trackpad.addEventListener("touchend", (e) => {
       socket.emit("scrollEnd");
     }
 
-    endDragMode();
+    endDragMode(socket);
     isTwoFingerGesture = false;
     initialDistance = 0;
     lastZoomDistance = 0;
     hasZoomed = false;
     hasScrolled = false;
+    rightClickTriggered = false;
   }
 
   moved = false;
-});
+};
 
-window.addEventListener("orientationchange", sendDimensions);
-
-window.addEventListener("resize", () => {
-  document.querySelector(".container").style.height = `${window.innerHeight}px`;
-});
-
-document.addEventListener("DOMContentLoaded", () => {
-  const menuToggle = document.querySelector("#menuToggle");
-  const menuPanel = document.querySelector("#menuPanel");
-  const keyboardButton = document.querySelector(".circle");
-
-  menuToggle.addEventListener("click", () => {
-    menuPanel.classList.toggle("active");
-  });
-
-  keyboardButton.addEventListener("click", () => {
-    // Check if keyboard input already exists
-    const existingInput = document.body.querySelector(".keyboard-input");
-    if (existingInput) {
-      existingInput.focus();
-      menuPanel.classList.remove("active");
-      return;
-    }
-
-    // Create new keyboard input
-    const input = createKeyboardInput();
-    setupKeyboard(input);
-    input.focus();
-    menuPanel.classList.remove("active");
-  });
-});
+export * as EVENTS from "./events";
