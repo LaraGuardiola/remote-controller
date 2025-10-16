@@ -13,7 +13,6 @@
   "keywords": [],
   "author": "Sergio Lara Guardiola",
   "license": "ISC",
-  "packageManager": "pnpm@10.6.5",
   "dependencies": {
     "@capacitor/android": "^7.4.3",
     "@capacitor/cli": "^7.4.3",
@@ -22,15 +21,7 @@
     "@jitsi/robotjs": "^0.6.18",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
-    "systray2": "^2.1.4",
     "trayballoon": "^2.0.0"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "robotjs",
-      "robotjs_addon",
-      "@jitsi/robotjs"
-    ]
   },
   "type": "module",
   "devDependencies": {
