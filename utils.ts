@@ -1,9 +1,9 @@
 import os from "os";
-import robot from "@jitsi/robotjs";
 import COMMANDS from "./commands.json";
 import asciiArt from "./assets/ascii-text-art.txt";
 import { appendFile } from "node:fs/promises";
 import fs from "node:fs";
+import { keyboard, VK } from "./mecha";
 
 const platform = os.platform();
 
@@ -56,8 +56,9 @@ export const executeKeyboardShortcut = (
   key: string
 ): void => {
   const config = COMMANDS[commandKey];
+  let letter = key.toUpperCase() as VK;
   if (config && config[platform]) {
-    robot.keyTap(key);
+    keyboard.shortcut("CONTROL", letter);
     console.log(config.successMessage);
   } else {
     console.log(`${commandKey} not supported on ${platform}`);

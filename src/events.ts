@@ -30,7 +30,7 @@ const LONG_PRESS_DURATION = 500;
 const ZOOM_THROTTLE_DELAY = 120;
 const SCROLL_THROTTLE_DELAY = 100;
 const TWO_FINGER_GESTURE_CLICK_DELAY = 200;
-const THROTTLE_MS = 32;
+const THROTTLE_MS = 16;
 const SCROLL_COOLDOWN_DELAY = 300; // Prevent clicks for 300ms after scroll ends
 const RIGHT_CLICK_COOLDOWN_DELAY = 300; // Prevent left clicks for 300ms after right click
 
@@ -415,6 +415,7 @@ export const sendAction = (button: HTMLElement, socket: Socket): void => {
 
 export const handleTouchStart = (e: TouchEvent, socket: Socket): void => {
   e.preventDefault();
+  socket?.emit("testScrollDebug");
 
   const keyboardInput =
     document.querySelector<HTMLInputElement>(".keyboard-input");
