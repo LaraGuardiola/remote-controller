@@ -38,10 +38,9 @@ EndIf
 TraySetToolTip("Remote Controller")
 
 ; Notificación de inicio
-TrayTip("Remote Controller", "Server started correctly", 3, 1)
+TrayTip("Remote Controller", "Server started! Grab the phone ❤️", 3, 1)
 
 ; Crear menu simple
-
 $idQuit = TrayCreateItem("Quit")
 TrayItemSetOnEvent(-1, "Quit")
 
@@ -57,10 +56,6 @@ While 1
 WEnd
 
 ; Funciones
-Func OpenInBrowser()
-    ShellExecute("http://localhost:5173")
-EndFunc
-
 Func Quit()
     If ProcessExists($hProcess) Then
         ProcessClose($hProcess)

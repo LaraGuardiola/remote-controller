@@ -1,8 +1,6 @@
-import { join } from "path";
-
 await Bun.build({
-  entrypoints: ["../index.ts"],
-  outdir: "../",
+  entrypoints: ["./index.ts"],
+  outdir: "./",
   compile: {
     target: "bun-windows-x64",
     outfile: "remote-controller.exe",
@@ -13,7 +11,7 @@ await Bun.build({
       description: "Remote controller",
       copyright: "© 2025 LaraGuardiola",
       hideConsole: true,
-      icon: join(import.meta.dir, "../assets/icon.ico"),
+      icon: "./assets/icon.ico",
     },
   },
 });

@@ -1,7 +1,7 @@
 {
   "name": "remote-controller",
   "version": "1.0.0",
-  "description": "",
+  "description": "Remote controller application built with Bun, socket.io and a custom library for remote control with no c++ dependencies.",
   "main": "index.ts",
   "scripts": {
     "dev": "concurrently \"bun run backend\" \"bun run frontend\"",
