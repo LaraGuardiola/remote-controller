@@ -1,10 +1,9 @@
-import robot from "@jitsi/robotjs";
 import { createServer, IncomingMessage, ServerResponse } from "http";
 import { Server as SocketIOServer } from "socket.io";
 import { readFile } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
-import trayballoon from "trayballoon";
+import { mouse, keyboard, screen } from "./mecha";
 import {
   displayRemoteControllerAscii,
   executeCommand,
@@ -15,7 +14,6 @@ import {
 } from "./utils";
 
 const port: number = 3000;
-const frontPort: number = 5173;
 const ip: string = getIp();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -25,12 +23,6 @@ type Dimensions = {
   width: number;
   height: number;
 };
-
-await trayballoon({
-  text: `Launch at ${ip}:${frontPort}`,
-  icon: "./assets/icon.ico",
-  title: "Remote Controller",
-});
 
 const httpServer = createServer((req: IncomingMessage, res: ServerResponse) => {
   // Health check endpoint
@@ -82,17 +74,17 @@ const processMouseQueue = (): void => {
     return;
   }
 
-  const currentPos = robot.getMousePos();
+  const currentPos = mouse.getPosition();
   const sensitivity = isDragging ? 3 : 5;
 
   let newX = currentPos.x + pendingDeltaX * sensitivity;
   let newY = currentPos.y + pendingDeltaY * sensitivity;
 
-  const screenSize = robot.getScreenSize();
+  const screenSize = screen.getSize();
   newX = Math.max(0, Math.min(newX, screenSize.width - 1));
   newY = Math.max(0, Math.min(newY, screenSize.height - 1));
 
-  robot.moveMouse(Math.round(newX), Math.round(newY));
+  mouse.moveTo(Math.round(newX), Math.round(newY));
 
   pendingDeltaX = 0;
   pendingDeltaY = 0;
@@ -125,16 +117,18 @@ io.on("connection", (socket) => {
   socket.on("click", (button: string) => {
     console.log(`[CLICK EVENT] Click ${button} received`);
     if (button === "right") {
-      robot.mouseClick("right");
+      // robot.mouseClick("right");
+      mouse.rightClick();
     } else {
-      robot.mouseClick("left");
+      // robot.mouseClick("left");
+      mouse.leftClick();
     }
   });
 
   socket.on("dragStart", () => {
-    console.log("[DRAG EVENT] Dragging received");
+    console.log("[DRAG EVENT] Start dragging");
     isDragging = true;
-    robot.mouseToggle("down", "left");
+    mouse.mouseToggle("down", "left");
   });
 
   socket.on("drag", (deltaX: number, deltaY: number) => {
@@ -151,34 +145,39 @@ io.on("connection", (socket) => {
   socket.on("dragEnd", () => {
     console.log("[DRAG EVENT] End dragging");
     isDragging = false;
-    robot.mouseToggle("up", "left");
+    // robot.mouseToggle("up", "left");
+    mouse.mouseToggle("up", "left");
   });
 
   socket.on("zoom", (direction: string, magnitude: number) => {
     console.log(`[ZOOM EVENT] Zoom ${direction} received`);
 
     if (direction === "in") {
-      robot.keyTap("+", "control");
+      keyboard.zoomIn();
     } else if (direction === "out") {
-      robot.keyTap("-", "control");
+      keyboard.zoomOut();
     }
   });
 
   socket.on("scroll", (direction: string, magnitude: number) => {
-    const scrollAmount = Math.max(1, Math.round(magnitude)) * 4;
+    // Escala la magnitud (ajusta estos valores según tu preferencia)
+    const scrollAmount = Math.max(1, Math.round(magnitude / 2));
+
     console.log(
-      `[SCROLL EVENT] Scroll ${direction} received with magnitude:`,
+      `[SCROLL EVENT] Scroll ${direction} with magnitude:`,
       scrollAmount
     );
 
     try {
       if (direction === "up") {
-        robot.scrollMouse(0, -scrollAmount);
+        // Positivo = scroll arriba
+        mouse.scroll(scrollAmount);
       } else if (direction === "down") {
-        robot.scrollMouse(0, scrollAmount);
+        // Negativo = scroll abajo
+        mouse.scroll(-scrollAmount);
       }
     } catch (error) {
-      console.error("Error with scrollMouse:", error);
+      console.error("Error with scroll:", error);
     }
   });
 
@@ -186,31 +185,33 @@ io.on("connection", (socket) => {
     console.log("[CLIENT] Client disconnected:", socket.id);
     if (isDragging) {
       isDragging = false;
-      robot.mouseToggle("up", "left");
+      mouse.mouseToggle("up", "left");
     }
   });
 
   socket.on("keyboard", (data: { key: string }) => {
     const { key } = data;
     try {
-      switch (key) {
-        case "backspace":
-          robot.keyTap("backspace");
-          console.log("[KEYBOARD EVENT] Backspace pressed");
-          break;
-        case "enter":
-          robot.keyTap("enter");
-          console.log("[KEYBOARD EVENT] Enter pressed");
-          break;
-        case "tab":
-          robot.keyTap("tab");
-          console.log("[KEYBOARD EVENT] Tab pressed");
-          break;
-        default:
-          // Use typeString for all characters to bypass keyboard layout issues
-          robot.typeString(key);
-          console.log(`[KEYBOARD EVENT] Typed character: ${key}`);
-          break;
+      // Mapeo de teclas especiales
+      const specialKeys = {
+        backspace: "BACK",
+        enter: "RETURN",
+        tab: "TAB",
+        delete: "DELETE",
+        escape: "ESCAPE",
+      };
+
+      const lowerKey = key.toLowerCase();
+
+      // Si es una tecla especial, usar tap()
+      if (specialKeys[lowerKey]) {
+        keyboard.tap(specialKeys[lowerKey]);
+        console.log(`[KEYBOARD EVENT] Special key: ${lowerKey}`);
+      }
+      // Si es un carácter normal, usar type()
+      else {
+        keyboard.type(key);
+        console.log(`[KEYBOARD EVENT] Typed character: ${key}`);
       }
     } catch (error) {
       console.error("Error typing character:", key, error);

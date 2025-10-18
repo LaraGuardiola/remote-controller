@@ -10,7 +10,7 @@ $sAppPath = @ScriptDir & "\remote-controller.exe"
 
 ; Verificar que existe
 If Not FileExists($sAppPath) Then
-    MsgBox(16, "Error", "No se encuentra remote-controller.exe")
+    MsgBox(16, "Error", "RemoteController.exe not found")
     Exit
 EndIf
 
@@ -19,7 +19,7 @@ $hProcess = Run($sAppPath, @ScriptDir, @SW_HIDE)
 
 ; Verificar que se inició correctamente
 If @error Then
-    MsgBox(16, "Error", "No se pudo iniciar el servidor")
+    MsgBox(16, "Error", "Failed to start the server")
     Exit
 EndIf
 
@@ -27,18 +27,27 @@ EndIf
 Opt("TrayMenuMode", 3)
 Opt("TrayOnEventMode", 1)
 
-; Configurar icono y tooltip
-TraySetIcon(@ScriptDir & "\assets\icon.ico")
-TraySetToolTip("Remote Control Server")
+; Configurar icono (primero intenta cargar el externo, si no usa el del exe)
+Local $sIconPath = @ScriptDir & "\assets\icon.ico"
+If FileExists($sIconPath) Then
+    TraySetIcon($sIconPath)
+Else
+    TraySetIcon(@ScriptFullPath, 0) ; Usa el icono del propio exe
+EndIf
+
+TraySetToolTip("Remote Controller")
+
+; Notificación de inicio
+TrayTip("Remote Controller", "Server started correctly", 3, 1)
 
 ; Crear menu simple
-$idAbrir = TrayCreateItem("Abrir en navegador")
-TrayItemSetOnEvent(-1, "AbrirNavegador")
+$idAbrir = TrayCreateItem("Open in browser")
+TrayItemSetOnEvent(-1, "OpenInBrowser")
 
 TrayCreateItem("")
 
-$idSalir = TrayCreateItem("Salir")
-TrayItemSetOnEvent(-1, "Salir")
+$idQuit = TrayCreateItem("Quit")
+TrayItemSetOnEvent(-1, "Quit")
 
 ; Mostrar icono en bandeja
 TraySetState(1)
@@ -52,11 +61,11 @@ While 1
 WEnd
 
 ; Funciones
-Func AbrirNavegador()
-    ShellExecute("http://localhost:3000")
+Func OpenInBrowser()
+    ShellExecute("http://localhost:5173")
 EndFunc
 
-Func Salir()
+Func Quit()
     If ProcessExists($hProcess) Then
         ProcessClose($hProcess)
     EndIf

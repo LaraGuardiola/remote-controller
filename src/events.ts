@@ -415,6 +415,7 @@ export const sendAction = (button: HTMLElement, socket: Socket): void => {
 
 export const handleTouchStart = (e: TouchEvent, socket: Socket): void => {
   e.preventDefault();
+  socket?.emit("testScrollDebug");
 
   const keyboardInput =
     document.querySelector<HTMLInputElement>(".keyboard-input");

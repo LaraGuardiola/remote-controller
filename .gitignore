@@ -75,3 +75,5 @@ temp/
 
 # Other
 *.exe
+*.au3
+mecha-test.ts
