@@ -1,3 +1,5 @@
+import { join } from "path";
+
 await Bun.build({
   entrypoints: ["../index.ts"],
   outdir: "../",
@@ -11,7 +13,7 @@ await Bun.build({
       description: "Remote controller",
       copyright: "© 2025 LaraGuardiola",
       hideConsole: true,
-      icon: "../assets/icon.ico",
+      icon: join(import.meta.dir, "../assets/icon.ico"),
     },
   },
 });
