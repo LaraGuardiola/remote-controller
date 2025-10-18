@@ -41,10 +41,6 @@ TraySetToolTip("Remote Controller")
 TrayTip("Remote Controller", "Server started correctly", 3, 1)
 
 ; Crear menu simple
-$idAbrir = TrayCreateItem("Open in browser")
-TrayItemSetOnEvent(-1, "OpenInBrowser")
-
-TrayCreateItem("")
 
 $idQuit = TrayCreateItem("Quit")
 TrayItemSetOnEvent(-1, "Quit")

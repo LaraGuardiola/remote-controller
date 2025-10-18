@@ -1,6 +1,6 @@
 await Bun.build({
-  entrypoints: ["./index.ts"],
-  outdir: "./",
+  entrypoints: ["../index.ts"],
+  outdir: "../",
   compile: {
     target: "bun-windows-x64",
     outfile: "remote-controller.exe",
@@ -10,8 +10,8 @@ await Bun.build({
       version: "1.0.0.0",
       description: "Remote controller",
       copyright: "© 2025 LaraGuardiola",
-      hideConsole: true, // Set to true for GUI applications
-      icon: "./assets/icon.ico", // Path to icon file
+      hideConsole: true,
+      icon: "../assets/icon.ico",
     },
   },
 });
