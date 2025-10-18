@@ -1,4 +1,4 @@
-import { dlopen, FFIType } from "bun:ffi";
+import { dlopen, FFIType, ptr } from "bun:ffi";
 
 // Load user32.dll (included in Windows)
 const user32 = dlopen("user32.dll", {
@@ -26,10 +26,13 @@ const user32 = dlopen("user32.dll", {
     args: [FFIType.i32],
     returns: FFIType.i32,
   },
+  VkKeyScanW: {
+    args: [FFIType.u16],
+    returns: FFIType.i16,
+  },
 });
 
 // Constants for mouse_event
-const MOUSEEVENTF_MOVE = 0x0001;
 const MOUSEEVENTF_LEFTDOWN = 0x0002;
 const MOUSEEVENTF_LEFTUP = 0x0004;
 const MOUSEEVENTF_RIGHTDOWN = 0x0008;
@@ -37,10 +40,12 @@ const MOUSEEVENTF_RIGHTUP = 0x0010;
 const MOUSEEVENTF_MIDDLEDOWN = 0x0020;
 const MOUSEEVENTF_MIDDLEUP = 0x0040;
 const MOUSEEVENTF_WHEEL = 0x0800;
-const MOUSEEVENTF_ABSOLUTE = 0x8000;
 
 // Constants for keybd_event
 const KEYEVENTF_KEYUP = 0x0002;
+const VK_SHIFT = 0x10;
+const VK_CONTROL = 0x11;
+const VK_MENU = 0x12; // ALT
 
 // Constants for SendInput
 const INPUT_KEYBOARD = 1;
@@ -98,108 +103,10 @@ const VK = {
   X: 0x58,
   Y: 0x59,
   Z: 0x5a,
+  Ñ: 0xf1,
 };
 
 export type VK = keyof typeof VK;
-
-// Mapeo de caracteres a teclas con o sin Shift
-const charToVK: Record<string, { vk: number; shift: boolean }> = {
-  a: { vk: 0x41, shift: false },
-  b: { vk: 0x42, shift: false },
-  c: { vk: 0x43, shift: false },
-  d: { vk: 0x44, shift: false },
-  e: { vk: 0x45, shift: false },
-  f: { vk: 0x46, shift: false },
-  g: { vk: 0x47, shift: false },
-  h: { vk: 0x48, shift: false },
-  i: { vk: 0x49, shift: false },
-  j: { vk: 0x4a, shift: false },
-  k: { vk: 0x4b, shift: false },
-  l: { vk: 0x4c, shift: false },
-  m: { vk: 0x4d, shift: false },
-  n: { vk: 0x4e, shift: false },
-  o: { vk: 0x4f, shift: false },
-  p: { vk: 0x50, shift: false },
-  q: { vk: 0x51, shift: false },
-  r: { vk: 0x52, shift: false },
-  s: { vk: 0x53, shift: false },
-  t: { vk: 0x54, shift: false },
-  u: { vk: 0x55, shift: false },
-  v: { vk: 0x56, shift: false },
-  w: { vk: 0x57, shift: false },
-  x: { vk: 0x58, shift: false },
-  y: { vk: 0x59, shift: false },
-  z: { vk: 0x5a, shift: false },
-  A: { vk: 0x41, shift: true },
-  B: { vk: 0x42, shift: true },
-  C: { vk: 0x43, shift: true },
-  D: { vk: 0x44, shift: true },
-  E: { vk: 0x45, shift: true },
-  F: { vk: 0x46, shift: true },
-  G: { vk: 0x47, shift: true },
-  H: { vk: 0x48, shift: true },
-  I: { vk: 0x49, shift: true },
-  J: { vk: 0x4a, shift: true },
-  K: { vk: 0x4b, shift: true },
-  L: { vk: 0x4c, shift: true },
-  M: { vk: 0x4d, shift: true },
-  N: { vk: 0x4e, shift: true },
-  O: { vk: 0x4f, shift: true },
-  P: { vk: 0x50, shift: true },
-  Q: { vk: 0x51, shift: true },
-  R: { vk: 0x52, shift: true },
-  S: { vk: 0x53, shift: true },
-  T: { vk: 0x54, shift: true },
-  U: { vk: 0x55, shift: true },
-  V: { vk: 0x56, shift: true },
-  W: { vk: 0x57, shift: true },
-  X: { vk: 0x58, shift: true },
-  Y: { vk: 0x59, shift: true },
-  Z: { vk: 0x5a, shift: true },
-  "0": { vk: 0x30, shift: false },
-  "1": { vk: 0x31, shift: false },
-  "2": { vk: 0x32, shift: false },
-  "3": { vk: 0x33, shift: false },
-  "4": { vk: 0x34, shift: false },
-  "5": { vk: 0x35, shift: false },
-  "6": { vk: 0x36, shift: false },
-  "7": { vk: 0x37, shift: false },
-  "8": { vk: 0x38, shift: false },
-  "9": { vk: 0x39, shift: false },
-  " ": { vk: 0x20, shift: false },
-  ".": { vk: 0xbe, shift: false },
-  ",": { vk: 0xbc, shift: false },
-  ";": { vk: 0xba, shift: false },
-  ":": { vk: 0xba, shift: true },
-  "=": { vk: 0xbb, shift: false },
-  "+": { vk: 0xbb, shift: true },
-  "-": { vk: 0xbd, shift: false },
-  _: { vk: 0xbd, shift: true },
-  "/": { vk: 0xbf, shift: false },
-  "?": { vk: 0xbf, shift: true },
-  "`": { vk: 0xc0, shift: false },
-  "~": { vk: 0xc0, shift: true },
-  "[": { vk: 0xdb, shift: false },
-  "{": { vk: 0xdb, shift: true },
-  "\\": { vk: 0xdc, shift: false },
-  "|": { vk: 0xdc, shift: true },
-  "]": { vk: 0xdd, shift: false },
-  "}": { vk: 0xdd, shift: true },
-  "'": { vk: 0xde, shift: false },
-  '"': { vk: 0xde, shift: true },
-  "<": { vk: 0xbc, shift: true },
-  ">": { vk: 0xbe, shift: true },
-  "!": { vk: 0x31, shift: true },
-  "@": { vk: 0x32, shift: true },
-  "#": { vk: 0x33, shift: true },
-  $: { vk: 0x34, shift: true },
-  "%": { vk: 0x35, shift: true },
-  "^": { vk: 0x36, shift: true },
-  "&": { vk: 0x37, shift: true },
-  "*": { vk: 0x38, shift: true },
-  "(": { vk: 0x39, shift: true },
-  ")": { vk: 0x30, shift: true },
-};
 
 export const mouse = {
   moveTo(x: number, y: number): void {
@@ -280,6 +187,123 @@ export const mouse = {
   },
 };
 
+// INPUT structure for SendInput
+function createKeyboardInput(
+  wVk: number,
+  wScan: number,
+  dwFlags: number
+): Uint8Array {
+  const input = new Uint8Array(28);
+  const view = new DataView(input.buffer);
+  view.setUint32(0, INPUT_KEYBOARD, true);
+  view.setUint16(4, wVk, true);
+  view.setUint16(6, wScan, true);
+  view.setUint32(8, dwFlags, true);
+  view.setUint32(12, 0, true);
+  view.setBigUint64(16, BigInt(0), true);
+  return input;
+}
+
+function sendUnicodeChar(char: string): void {
+  const charCode = char.charCodeAt(0);
+  const inputDown = createKeyboardInput(0, charCode, KEYEVENTF_UNICODE);
+  const inputUp = createKeyboardInput(
+    0,
+    charCode,
+    KEYEVENTF_UNICODE | KEYEVENTF_KEYUP
+  );
+  const inputs = new Uint8Array(56);
+  inputs.set(inputDown, 0);
+  inputs.set(inputUp, 28);
+  user32.symbols.SendInput(2, ptr(inputs), 28);
+  Bun.sleepSync(20);
+}
+
+// Fallback mapping for dead keys (mainly accents)
+// This map is used when VkKeyScanW does not handle a character correctly
+const fallbackCharMap: Record<string, () => void> = {
+  // Acute accents (dead key ´)
+  á: () => {
+    tapKey(0xde, false);
+    tapKey(0x41, false);
+  },
+  é: () => {
+    tapKey(0xde, false);
+    tapKey(0x45, false);
+  },
+  í: () => {
+    tapKey(0xde, false);
+    tapKey(0x49, false);
+  },
+  ó: () => {
+    tapKey(0xde, false);
+    tapKey(0x4f, false);
+  },
+  ú: () => {
+    tapKey(0xde, false);
+    tapKey(0x55, false);
+  },
+  Á: () => {
+    tapKey(0xde, false);
+    tapKey(0x41, true);
+  },
+  É: () => {
+    tapKey(0xde, false);
+    tapKey(0x45, true);
+  },
+  Í: () => {
+    tapKey(0xde, false);
+    tapKey(0x49, true);
+  },
+  Ó: () => {
+    tapKey(0xde, false);
+    tapKey(0x4f, true);
+  },
+  Ú: () => {
+    tapKey(0xde, false);
+    tapKey(0x55, true);
+  },
+
+  // Diaeresis (dead key ¨ = Shift + ´)
+  ü: () => {
+    tapKey(0xde, true);
+    tapKey(0x55, false);
+  },
+  Ü: () => {
+    tapKey(0xde, true);
+    tapKey(0x55, true);
+  },
+};
+
+function tapKey(vk: number, shift: boolean): void {
+  if (shift) {
+    user32.symbols.keybd_event(VK_SHIFT, 0, 0, null);
+    Bun.sleepSync(5);
+  }
+  user32.symbols.keybd_event(vk, 0, 0, null);
+  Bun.sleepSync(5);
+  user32.symbols.keybd_event(vk, 0, KEYEVENTF_KEYUP, null);
+  if (shift) {
+    Bun.sleepSync(5);
+    user32.symbols.keybd_event(VK_SHIFT, 0, KEYEVENTF_KEYUP, null);
+  }
+  Bun.sleepSync(15);
+}
+
+function tapKeyAltGr(vk: number): void {
+  // AltGr = Control + Right Alt
+  user32.symbols.keybd_event(VK_CONTROL, 0, 0, null);
+  user32.symbols.keybd_event(VK_MENU, 0, 0, null);
+  Bun.sleepSync(10);
+  user32.symbols.keybd_event(vk, 0, 0, null);
+  Bun.sleepSync(5);
+  user32.symbols.keybd_event(vk, 0, KEYEVENTF_KEYUP, null);
+  Bun.sleepSync(10);
+  user32.symbols.keybd_event(VK_MENU, 0, KEYEVENTF_KEYUP, null);
+  user32.symbols.keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, null);
+  Bun.sleepSync(15);
+}
+
 export const keyboard = {
   tap(key: keyof typeof VK): void {
     const vk = VK[key];
@@ -298,35 +322,42 @@ export const keyboard = {
   },
 
   typeChar(char: string): void {
-    const mapping = charToVK[char];
+    const charCode = char.charCodeAt(0);
 
-    // Si el carácter está mapeado, usar keybd_event
-    if (mapping) {
-      if (mapping.shift) {
-        user32.symbols.keybd_event(0x10, 0, 0, null);
-        Bun.sleepSync(5);
-      }
-      user32.symbols.keybd_event(mapping.vk, 0, 0, null);
-      Bun.sleepSync(5);
-      user32.symbols.keybd_event(mapping.vk, 0, KEYEVENTF_KEYUP, null);
-      if (mapping.shift) {
-        Bun.sleepSync(5);
-        user32.symbols.keybd_event(0x10, 0, KEYEVENTF_KEYUP, null);
-      }
-      Bun.sleepSync(10);
-    } else {
-      // Para caracteres no mapeados (ñ, acentos, €, etc.)
-      // Intentar con SendInput Unicode (aunque sabemos que no funciona bien)
-      console.warn(
-        `Carácter no soportado directamente: ${char} (código: ${char.charCodeAt(
-          0
-        )})`
-      );
+    // STEP 1: Try using VkKeyScanW (works for any keyboard layout)
+    const result = user32.symbols.VkKeyScanW(charCode);
 
-      // Como SendInput no funciona, simplemente lo ignoramos o podríamos
-      // intentar usar el portapapeles como workaround (más complejo)
-      Bun.sleepSync(10);
+    if (result !== -1) {
+      const vk = result & 0xff;
+      const modifiers = (result >> 8) & 0xff;
+
+      const needsShift = (modifiers & 1) !== 0;
+      const needsCtrl = (modifiers & 2) !== 0;
+      const needsAlt = (modifiers & 4) !== 0;
+
+      // If it requires Ctrl+Alt (AltGr), use tapKeyAltGr
+      if (needsCtrl && needsAlt) {
+        tapKeyAltGr(vk);
+        return;
+      }
+
+      // If it only requires Shift or nothing, use normal tapKey
+      if (!needsCtrl && !needsAlt) {
+        tapKey(vk, needsShift);
+        return;
+      }
     }
+
+    // STEP 2: If VkKeyScanW failed, use the fallback map
+    const fallbackHandler = fallbackCharMap[char];
+    if (fallbackHandler) {
+      fallbackHandler();
+      return;
+    }
+
+    // STEP 3: As a last resort, try Unicode (rarely works well)
+    console.warn(`Using Unicode for: '${char}' (may not work)`);
+    sendUnicodeChar(char);
   },
 
   type(text: string): void {

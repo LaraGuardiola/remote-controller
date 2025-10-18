@@ -117,10 +117,8 @@ io.on("connection", (socket) => {
   socket.on("click", (button: string) => {
     console.log(`[CLICK EVENT] Click ${button} received`);
     if (button === "right") {
-      // robot.mouseClick("right");
       mouse.rightClick();
     } else {
-      // robot.mouseClick("left");
       mouse.leftClick();
     }
   });
@@ -145,11 +143,10 @@ io.on("connection", (socket) => {
   socket.on("dragEnd", () => {
     console.log("[DRAG EVENT] End dragging");
     isDragging = false;
-    // robot.mouseToggle("up", "left");
     mouse.mouseToggle("up", "left");
   });
 
-  socket.on("zoom", (direction: string, magnitude: number) => {
+  socket.on("zoom", (direction: string) => {
     console.log(`[ZOOM EVENT] Zoom ${direction} received`);
 
     if (direction === "in") {
@@ -192,7 +189,6 @@ io.on("connection", (socket) => {
   socket.on("keyboard", (data: { key: string }) => {
     const { key } = data;
     try {
-      // Mapeo de teclas especiales
       const specialKeys = {
         backspace: "BACK",
         enter: "RETURN",
@@ -203,13 +199,10 @@ io.on("connection", (socket) => {
 
       const lowerKey = key.toLowerCase();
 
-      // Si es una tecla especial, usar tap()
       if (specialKeys[lowerKey]) {
         keyboard.tap(specialKeys[lowerKey]);
         console.log(`[KEYBOARD EVENT] Special key: ${lowerKey}`);
-      }
-      // Si es un carácter normal, usar type()
-      else {
+      } else {
         keyboard.type(key);
         console.log(`[KEYBOARD EVENT] Typed character: ${key}`);
       }
