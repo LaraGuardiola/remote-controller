@@ -145,16 +145,16 @@ export const mouse = {
   },
 
   scroll(delta: number): void {
-    const wheelDelta = delta * 120;
+    const wheelDelta = delta * 40;
     user32.symbols.mouse_event(MOUSEEVENTF_WHEEL, 0, 0, wheelDelta, null);
   },
 
   scrollUp(amount: number = 1): void {
-    this.scroll(amount);
+    this.scroll(-amount);
   },
 
   scrollDown(amount: number = 1): void {
-    this.scroll(-amount);
+    this.scroll(amount);
   },
 
   mouseDown(button: "left" | "right" | "middle" = "left"): void {

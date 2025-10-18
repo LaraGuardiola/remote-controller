@@ -89,9 +89,7 @@ const processMouseQueue = (): void => {
   pendingDeltaX = 0;
   pendingDeltaY = 0;
 
-  //testing 60fps and more
   processMouseQueue();
-  // setTimeout(processMouseQueue, 0);
 };
 
 io.on("connection", (socket) => {
@@ -157,7 +155,6 @@ io.on("connection", (socket) => {
   });
 
   socket.on("scroll", (direction: string, magnitude: number) => {
-    // Escala la magnitud (ajusta estos valores según tu preferencia)
     const scrollAmount = Math.max(1, Math.round(magnitude / 2));
 
     console.log(
@@ -167,10 +164,8 @@ io.on("connection", (socket) => {
 
     try {
       if (direction === "up") {
-        // Positivo = scroll arriba
         mouse.scroll(scrollAmount);
       } else if (direction === "down") {
-        // Negativo = scroll abajo
         mouse.scroll(-scrollAmount);
       }
     } catch (error) {
