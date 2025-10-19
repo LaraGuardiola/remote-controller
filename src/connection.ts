@@ -1,6 +1,7 @@
 import { io, Socket } from "socket.io-client";
 import { Capacitor, CapacitorHttp } from "@capacitor/core";
 import { LocalNotifications } from "@capacitor/local-notifications";
+import { setHeaderError, setHeaderFound, setHeaderScanning } from "./layout";
 
 let socket: Socket | null = null;
 let ip: string | null = null;
@@ -66,7 +67,6 @@ const scanNetwork = async (): Promise<string | null> => {
             isNative ? "Native" : "Web"
           })!`
         );
-
         return fullIp;
       }
 
@@ -82,12 +82,41 @@ const scanNetwork = async (): Promise<string | null> => {
   return null;
 };
 
+const handleRescan = async () => {
+  console.log("Rescanning network...");
+
+  if (socket?.connected) {
+    socket.disconnect();
+  }
+  socket = null;
+  ip = null;
+  localAddress = null;
+
+  // Reset connection for rescanning
+  const newSocket = await initConnection();
+
+  if (newSocket) {
+    window.dispatchEvent(
+      new CustomEvent("socket-reconnected", {
+        detail: { socket: newSocket },
+      })
+    );
+  }
+};
+
 export const initConnection = async (): Promise<Socket | null> => {
-  ip = (await scanNetwork()) || prompt("Enter your local IPv4:");
+  setHeaderScanning();
+
+  ip = await scanNetwork();
+
   if (!ip) {
+    setHeaderError();
     return null;
   }
+
   localAddress = `http://${ip}:5173`;
+
+  setHeaderFound(ip, handleRescan);
 
   socket = io(localAddress, {
     transports: ["polling", "websocket"],
@@ -153,3 +182,6 @@ export const initConnection = async (): Promise<Socket | null> => {
     }, 12000);
   });
 };
+
+export const getSocket = () => socket;
+export const getIp = () => ip;
