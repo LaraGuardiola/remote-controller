@@ -10,7 +10,7 @@ await Bun.build({
       version: "1.0.0.0",
       description: "Remote controller",
       copyright: "© 2025 LaraGuardiola",
-      hideConsole: true,
+      // hideConsole: true, //useless
       icon: "./assets/icon.ico",
     },
   },

@@ -21,7 +21,7 @@ const scanNetwork = async (): Promise<string | null> => {
       const end = Math.min(start + batchSize - 1, 254);
 
       for (let ipNum = start; ipNum <= end; ipNum++) {
-        const url = `http://${baseSubnet}${ipNum}:3000/health`;
+        const url = `http://${baseSubnet}${ipNum}:5173/health`;
 
         if (isNative) {
           const promise = CapacitorHttp.request({
@@ -87,7 +87,7 @@ export const initConnection = async (): Promise<Socket | null> => {
   if (!ip) {
     return null;
   }
-  localAddress = `http://${ip}:3000`;
+  localAddress = `http://${ip}:5173`;
 
   socket = io(localAddress, {
     transports: ["polling", "websocket"],

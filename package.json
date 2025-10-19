@@ -4,11 +4,12 @@
   "description": "Remote controller application built with Bun, socket.io and a custom library for remote control with no c++ dependencies.",
   "main": "index.ts",
   "scripts": {
-    "dev": "concurrently \"bun run backend\" \"bun run frontend\"",
+    "dev": "concurrently \"vite --host\" \"bun index.ts --dev\"",
     "backend": "bun index.ts",
     "frontend": "vite --host",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "build:exe": "vite build && bun build-bun"
   },
   "keywords": [],
   "author": "Sergio Lara Guardiola",
