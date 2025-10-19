@@ -24,7 +24,6 @@ type Dimensions = {
   height: number;
 };
 
-// Servidor HTTP - función síncrona pero con async/await dentro
 const httpServer = createServer((req, res) => {
   // Health check endpoint
   if (req.url === "/health") {
@@ -63,7 +62,6 @@ const httpServer = createServer((req, res) => {
   })();
 });
 
-// Socket.IO con el servidor HTTP de Node.js
 const io = new SocketIOServer(httpServer, {
   cors: { origin: "*" },
   maxHttpBufferSize: 1e3,
@@ -284,7 +282,9 @@ httpServer.listen(port, "0.0.0.0", () => {
   }
 
   displayRemoteControllerAscii();
-  console.log(`🚀 Server running:`);
-  console.log(`   Local:   http://localhost:${port}`);
-  console.log(`   Network: http://${localIP}:${port}\n`);
+  if (!isDev) {
+    console.log(`🚀 Server running:`);
+    console.log(`   Local:   http://localhost:${port}`);
+    console.log(`   Network: http://${localIP}:${port}\n`);
+  }
 });
