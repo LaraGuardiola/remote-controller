@@ -1,10 +1,61 @@
 import { io, Socket } from "socket.io-client";
 import { Capacitor, CapacitorHttp } from "@capacitor/core";
 import { LocalNotifications } from "@capacitor/local-notifications";
+import { setHeaderError, setHeaderFound, setHeaderScanning } from "./layout";
+import { getFavoriteIPsList, saveFavoriteIP } from "./ipCache";
 
 let socket: Socket | null = null;
 let ip: string | null = null;
 let localAddress: string | null = null;
+
+const checkIP = async (ipAddress: string): Promise<boolean> => {
+  const url = `http://${ipAddress}:5173/health`;
+  const requestTimeout = 800;
+  const isNative = Capacitor.isNativePlatform();
+
+  try {
+    if (isNative) {
+      const response = await CapacitorHttp.request({
+        method: "GET",
+        url,
+        connectTimeout: requestTimeout,
+        readTimeout: requestTimeout,
+      });
+      return response.status === 200;
+    } else {
+      await fetch(url, {
+        signal: AbortSignal.timeout(requestTimeout),
+      });
+      return true;
+    }
+  } catch {
+    return false;
+  }
+};
+
+const scanFavoriteIPs = async (): Promise<string | null> => {
+  const favoriteIPs = getFavoriteIPsList();
+
+  if (favoriteIPs.length === 0) {
+    console.log("No favorite IPs found, proceeding to full scan...");
+    return null;
+  }
+
+  console.log(`🔍 Checking ${favoriteIPs.length} favorite IP(s)...`);
+
+  for (const favoriteIP of favoriteIPs) {
+    console.log(`Trying favorite IP: ${favoriteIP}`);
+    const isActive = await checkIP(favoriteIP);
+
+    if (isActive) {
+      console.log(`✅ Favorite IP found: ${favoriteIP}`);
+      return favoriteIP;
+    }
+  }
+
+  console.log("No favorite IPs responded, proceeding to full scan...");
+  return null;
+};
 
 const scanNetwork = async (): Promise<string | null> => {
   const subnetsToScan = ["192.168.1.", "192.168.0."];
@@ -66,7 +117,6 @@ const scanNetwork = async (): Promise<string | null> => {
             isNative ? "Native" : "Web"
           })!`
         );
-
         return fullIp;
       }
 
@@ -82,12 +132,50 @@ const scanNetwork = async (): Promise<string | null> => {
   return null;
 };
 
+// Función de rescaneo
+const handleRescan = async () => {
+  console.log("Rescanning network...");
+
+  // handle disconnect if old socket exists
+  if (socket?.connected) {
+    socket.disconnect();
+  }
+  socket = null;
+  ip = null;
+  localAddress = null;
+
+  // Restart connection
+  const newSocket = await initConnection();
+
+  // Dispatch event to notify app.ts about the reconnection
+  if (newSocket) {
+    window.dispatchEvent(
+      new CustomEvent("socket-reconnected", {
+        detail: { socket: newSocket },
+      })
+    );
+  }
+};
+
 export const initConnection = async (): Promise<Socket | null> => {
-  ip = (await scanNetwork()) || prompt("Enter your local IPv4:");
+  setHeaderScanning();
+
+  // Start scanning favorite ips first
+  ip = await scanFavoriteIPs();
+
+  // If nothing is found, then starts looking at the classic subnets 192.168.0.x and 192.168.1.x
   if (!ip) {
+    ip = await scanNetwork();
+  }
+
+  if (!ip) {
+    setHeaderError();
     return null;
   }
+
   localAddress = `http://${ip}:5173`;
+
+  setHeaderFound(ip, handleRescan);
 
   socket = io(localAddress, {
     transports: ["polling", "websocket"],
@@ -100,6 +188,8 @@ export const initConnection = async (): Promise<Socket | null> => {
   return new Promise<Socket | null>((resolve) => {
     socket?.on("connect", async () => {
       console.log(socket?.id);
+
+      saveFavoriteIP(ip!);
 
       if (Capacitor.isNativePlatform()) {
         try {

@@ -2,6 +2,7 @@ import { Capacitor } from "@capacitor/core";
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { Socket } from "socket.io-client";
 import { initConnection } from "./connection";
+import { setHeaderScanning } from "./layout";
 import * as EVENTS from "./events";
 
 const trackpad = document.querySelector<HTMLElement>(".trackpad")!;
@@ -26,13 +27,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   keyboardButton.addEventListener("click", () => {
     // Check if keyboard input already exists
-    const existingInput = document.body.querySelector<HTMLInputElement>(".keyboard-input");
+    const existingInput =
+      document.body.querySelector<HTMLInputElement>(".keyboard-input");
     if (existingInput) {
       existingInput.focus();
       menuPanel.classList.remove("active");
       return;
     }
-
     // Create new keyboard input
     const input = EVENTS.createKeyboardInput();
     EVENTS.setupKeyboard(input, socket!);
@@ -40,7 +41,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     menuPanel.classList.remove("active");
   });
 
+  setHeaderScanning();
   socket = await initConnection();
+
+  window.addEventListener("socket-reconnected", ((e: CustomEvent) => {
+    console.log("Socket reconnected after rescan");
+    socket = e.detail.socket;
+  }) as EventListener);
 
   window.addEventListener("orientationchange", () => {
     EVENTS.sendDimensions(socket!);
