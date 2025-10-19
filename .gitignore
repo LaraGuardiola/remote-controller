@@ -74,6 +74,7 @@ temp/
 .vite/
 
 # Other
+*.apk
 *.exe
 *.au3
 mecha-test.ts
