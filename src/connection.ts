@@ -1,7 +1,12 @@
 import { io, Socket } from "socket.io-client";
 import { Capacitor, CapacitorHttp } from "@capacitor/core";
 import { LocalNotifications } from "@capacitor/local-notifications";
-import { setHeaderError, setHeaderFound, setHeaderScanning } from "./layout";
+import {
+  setHeaderFound,
+  setHeaderScanning,
+  setHeaderError,
+  setHeaderDisconnected,
+} from "./layout";
 import { getFavoriteIPsList, saveFavoriteIP } from "./ipCache";
 
 let socket: Socket | null = null;
@@ -169,13 +174,12 @@ export const initConnection = async (): Promise<Socket | null> => {
   }
 
   if (!ip) {
-    setHeaderError();
+    // Mostrar error CON la opción de rescan
+    setHeaderError(handleRescan);
     return null;
   }
 
   localAddress = `http://${ip}:5173`;
-
-  setHeaderFound(ip, handleRescan);
 
   socket = io(localAddress, {
     transports: ["polling", "websocket"],
@@ -189,7 +193,32 @@ export const initConnection = async (): Promise<Socket | null> => {
     socket?.on("connect", async () => {
       console.log(socket?.id);
 
-      saveFavoriteIP(ip!);
+      // Si el socket se reconecta pero no tenemos IP (caso edge)
+      // Reescanear para obtener la IP correcta
+      if (!ip) {
+        console.log("Socket reconnected but IP is null, rescanning...");
+        setHeaderScanning();
+
+        // Start with favorite IPs, then subnets
+        ip = await scanFavoriteIPs();
+        if (!ip) {
+          ip = await scanNetwork();
+        }
+
+        // Make sure to disconnect if we still don't have an IP
+        if (!ip) {
+          console.warn("Rescan after reconnect failed");
+          socket?.disconnect();
+          setHeaderError(handleRescan);
+          resolve(null);
+          return;
+        }
+
+        localAddress = `http://${ip}:5173`;
+      }
+
+      setHeaderFound(ip, handleRescan);
+      saveFavoriteIP(ip);
 
       if (Capacitor.isNativePlatform()) {
         try {
@@ -212,6 +241,8 @@ export const initConnection = async (): Promise<Socket | null> => {
 
     socket?.on("disconnect", async () => {
       console.log("Disconnected from server");
+      const disconnectedAddress = localAddress;
+      setHeaderDisconnected(handleRescan);
 
       if (Capacitor.isNativePlatform()) {
         try {
@@ -219,7 +250,7 @@ export const initConnection = async (): Promise<Socket | null> => {
             notifications: [
               {
                 title: "Connection lost",
-                body: `Disconnected from ${localAddress}`,
+                body: `Disconnected from ${disconnectedAddress}`,
                 id: 1,
               },
             ],
