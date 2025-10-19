@@ -18,7 +18,7 @@ Clean, intuitive, and responsive. Your phone becomes your PC:
 
 ### Option 1: Pre-built Releases (Easiest)
 
-1. Go to [Releases](../../releases)
+1. Go to [Releases](https://github.com/LaraGuardiola/remote-controller/releases/tag/1.0.0)
 2. Download:
    - **`remote-control.apk`** for Android
    - **`remote-control-setup.exe`** for Windows
