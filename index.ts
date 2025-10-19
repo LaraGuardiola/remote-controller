@@ -1,8 +1,7 @@
-import { createServer, IncomingMessage, ServerResponse } from "http";
+import { createServer } from "http";
 import { Server as SocketIOServer } from "socket.io";
-import { readFile } from "fs";
-import { fileURLToPath } from "url";
-import { dirname, join } from "path";
+import { join, dirname } from "path";
+import { networkInterfaces } from "os";
 import { mouse, keyboard, screen } from "./mecha";
 import {
   displayRemoteControllerAscii,
@@ -13,18 +12,20 @@ import {
   log,
 } from "./utils";
 
-const port: number = 3000;
+const port: number = 5173;
 const ip: string = getIp();
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const isDev = process.argv.includes("--dev");
+const baseDir = isDev ? process.cwd() : dirname(process.execPath);
+const staticDir = join(baseDir, "dist");
 
 type Dimensions = {
   width: number;
   height: number;
 };
 
-const httpServer = createServer((req: IncomingMessage, res: ServerResponse) => {
+// Servidor HTTP - función síncrona pero con async/await dentro
+const httpServer = createServer((req, res) => {
   // Health check endpoint
   if (req.url === "/health") {
     res.writeHead(200, {
@@ -35,28 +36,36 @@ const httpServer = createServer((req: IncomingMessage, res: ServerResponse) => {
     return;
   }
 
-  const filePath: string = req.url ?? "/";
-  const fullPath: string = join(__dirname, "public", filePath);
-  readFile(fullPath, (err: NodeJS.ErrnoException | null, data: Buffer) => {
-    if (err) {
-      res.writeHead(404);
-      res.end("Not found");
-    } else {
-      let contentType: string = "text/plain";
-      if (filePath.endsWith(".html")) contentType = "text/html";
-      if (filePath.endsWith(".css")) contentType = "text/css";
-      if (filePath.endsWith(".js")) contentType = "application/javascript";
-      if (filePath.endsWith(".svg")) contentType = "image/svg+xml";
-      res.writeHead(200, { "Content-Type": contentType });
-      res.end(data);
+  const filePath = req.url === "/" ? "/index.html" : req.url ?? "/";
+  const fullPath = join(staticDir, filePath);
+
+  (async () => {
+    try {
+      const file = Bun.file(fullPath);
+
+      if (await file.exists()) {
+        const data = await file.arrayBuffer();
+        res.writeHead(200, {
+          "Content-Type": file.type || "application/octet-stream",
+          "Access-Control-Allow-Origin": "*",
+        });
+        res.end(Buffer.from(data));
+      } else {
+        console.error(`❌ File not found: ${fullPath}`);
+        res.writeHead(404, { "Content-Type": "text/plain" });
+        res.end("Not found");
+      }
+    } catch (error) {
+      console.error(`❌ Error serving file: ${fullPath}`, error);
+      res.writeHead(500, { "Content-Type": "text/plain" });
+      res.end("Internal server error");
     }
-  });
+  })();
 });
 
+// Socket.IO con el servidor HTTP de Node.js
 const io = new SocketIOServer(httpServer, {
-  cors: {
-    origin: "*", // for testing purposes
-  },
+  cors: { origin: "*" },
   maxHttpBufferSize: 1e3,
   pingTimeout: 60000,
   pingInterval: 25000,
@@ -261,6 +270,21 @@ io.on("connection", (socket) => {
   });
 });
 
-httpServer.listen(port, () => {
+httpServer.listen(port, "0.0.0.0", () => {
+  let localIP = "localhost";
+  const nets = networkInterfaces();
+
+  for (const name of Object.keys(nets)) {
+    for (const net of nets[name]!) {
+      if (net.family === "IPv4" && !net.internal) {
+        localIP = net.address;
+        break;
+      }
+    }
+  }
+
   displayRemoteControllerAscii();
+  console.log(`🚀 Server running:`);
+  console.log(`   Local:   http://localhost:${port}`);
+  console.log(`   Network: http://${localIP}:${port}\n`);
 });
